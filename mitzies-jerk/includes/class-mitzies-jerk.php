@@ -319,48 +319,21 @@ class Mitzies_Jerk {
      */
     private function define_elementor_hooks() {
         // Only load if Elementor is active.
-        $this->loader->add_action( 'elementor/widgets/register', $this, 'register_elementor_widgets' );
-        $this->loader->add_action( 'elementor/elements/categories_registered', $this, 'add_elementor_category' );
+        $this->loader->add_action( 'plugins_loaded', $this, 'init_elementor_integration' );
     }
 
     /**
-     * Register Elementor widgets.
+     * Initialize Elementor integration.
      *
      * @since    1.0.0
-     * @param \Elementor\Widgets_Manager $widgets_manager Elementor widgets manager.
      */
-    public function register_elementor_widgets( $widgets_manager ) {
+    public function init_elementor_integration() {
         if ( ! class_exists( '\Elementor\Plugin' ) ) {
             return;
         }
 
-        require_once MITZIES_JERK_PATH . 'elementor/widgets/class-mj-food-menu-widget.php';
-        require_once MITZIES_JERK_PATH . 'elementor/widgets/class-mj-food-categories-widget.php';
-        require_once MITZIES_JERK_PATH . 'elementor/widgets/class-mj-cart-widget.php';
-        require_once MITZIES_JERK_PATH . 'elementor/widgets/class-mj-checkout-widget.php';
-        require_once MITZIES_JERK_PATH . 'elementor/widgets/class-mj-order-tracking-widget.php';
-
-        $widgets_manager->register( new MJ_Food_Menu_Widget() );
-        $widgets_manager->register( new MJ_Food_Categories_Widget() );
-        $widgets_manager->register( new MJ_Cart_Widget() );
-        $widgets_manager->register( new MJ_Checkout_Widget() );
-        $widgets_manager->register( new MJ_Order_Tracking_Widget() );
-    }
-
-    /**
-     * Add Elementor widget category.
-     *
-     * @since    1.0.0
-     * @param \Elementor\Elements_Manager $elements_manager Elementor elements manager.
-     */
-    public function add_elementor_category( $elements_manager ) {
-        $elements_manager->add_category(
-            'mitzies-jerk',
-            array(
-                'title' => __( 'Mitzies Jerk', 'mitzies-jerk' ),
-                'icon'  => 'fa fa-utensils',
-            )
-        );
+        require_once MITZIES_JERK_PATH . 'includes/elementor/class-mitzies-jerk-elementor.php';
+        Mitzies_Jerk_Elementor::get_instance();
     }
 
     /**
