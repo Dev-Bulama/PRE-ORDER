@@ -86,6 +86,7 @@ class Mitzies_Jerk_Gateway_Stripe extends Mitzies_Jerk_Payment_Gateway {
 
         foreach ( $items as $item ) {
             $food_item = get_post( $item->food_item_id );
+            $item_name = $food_item ? $food_item->post_title : __( 'Food Item', 'mitzies-jerk' );
             $addons = maybe_unserialize( $item->addons );
             $addon_names = array();
 
@@ -101,7 +102,7 @@ class Mitzies_Jerk_Gateway_Stripe extends Mitzies_Jerk_Payment_Gateway {
                 'price_data' => array(
                     'currency'     => strtolower( $order->get( 'currency' ) ),
                     'product_data' => array(
-                        'name'        => $food_item->post_title,
+                        'name'        => $item_name,
                         'description' => $description,
                     ),
                     'unit_amount'  => intval( ( $item->price + ( $item->subtotal / $item->quantity - $item->price ) ) * 100 ),

@@ -343,10 +343,28 @@ class Mitzies_Jerk {
      * @access   private
      */
     private function define_cron_jobs() {
+        // Add custom cron schedule.
+        $this->loader->add_filter( 'cron_schedules', $this, 'add_cron_schedules' );
+
         $cron = new Mitzies_Jerk_Cron();
         $this->loader->add_action( 'mj_check_expired_orders', $cron, 'check_expired_orders' );
         $this->loader->add_action( 'mj_cleanup_sessions', $cron, 'cleanup_sessions' );
         $this->loader->add_action( 'mj_send_reminder_emails', $cron, 'send_reminder_emails' );
+    }
+
+    /**
+     * Add custom cron schedules.
+     *
+     * @since    1.0.0
+     * @param array $schedules Existing schedules.
+     * @return array Modified schedules.
+     */
+    public function add_cron_schedules( $schedules ) {
+        $schedules['five_minutes'] = array(
+            'interval' => 300,
+            'display'  => __( 'Every 5 Minutes', 'mitzies-jerk' ),
+        );
+        return $schedules;
     }
 
     /**
