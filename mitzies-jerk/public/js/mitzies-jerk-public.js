@@ -41,8 +41,8 @@
             // Apply coupon
             $(document).on('click', '.mj-coupon-btn', this.applyCoupon.bind(this));
 
-            // Category filter
-            $(document).on('click', '.mj-category-filter', this.filterByCategory.bind(this));
+            // Category filter (supports both .mj-filter-btn and .mj-category-filter)
+            $(document).on('click', '.mj-filter-btn, .mj-category-filter', this.filterByCategory.bind(this));
 
             // Load more items
             $(document).on('click', '.mj-load-more-btn', this.loadMoreItems.bind(this));

@@ -72,11 +72,17 @@ class Mitzies_Jerk_Ajax {
     public function update_cart() {
         check_ajax_referer( 'mj_ajax_nonce', 'nonce' );
 
-        $cart_item_key = isset( $_POST['cart_item_key'] ) ? sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) ) : '';
+        // Accept both cart_item_key and item_key for compatibility.
+        $cart_item_key = '';
+        if ( isset( $_POST['cart_item_key'] ) ) {
+            $cart_item_key = sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) );
+        } elseif ( isset( $_POST['item_key'] ) ) {
+            $cart_item_key = sanitize_text_field( wp_unslash( $_POST['item_key'] ) );
+        }
         $quantity = isset( $_POST['quantity'] ) ? absint( $_POST['quantity'] ) : 0;
 
         if ( ! $cart_item_key ) {
-            wp_send_json_error( __( 'Invalid cart item.', 'mitzies-jerk' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid cart item.', 'mitzies-jerk' ) ) );
         }
 
         global $mitzies_jerk;
@@ -99,10 +105,16 @@ class Mitzies_Jerk_Ajax {
     public function remove_from_cart() {
         check_ajax_referer( 'mj_ajax_nonce', 'nonce' );
 
-        $cart_item_key = isset( $_POST['cart_item_key'] ) ? sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) ) : '';
+        // Accept both cart_item_key and item_key for compatibility.
+        $cart_item_key = '';
+        if ( isset( $_POST['cart_item_key'] ) ) {
+            $cart_item_key = sanitize_text_field( wp_unslash( $_POST['cart_item_key'] ) );
+        } elseif ( isset( $_POST['item_key'] ) ) {
+            $cart_item_key = sanitize_text_field( wp_unslash( $_POST['item_key'] ) );
+        }
 
         if ( ! $cart_item_key ) {
-            wp_send_json_error( __( 'Invalid cart item.', 'mitzies-jerk' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid cart item.', 'mitzies-jerk' ) ) );
         }
 
         global $mitzies_jerk;
@@ -362,20 +374,91 @@ class Mitzies_Jerk_Ajax {
         }
 
         $query = new WP_Query( $args );
-        $items = array();
 
-        while ( $query->have_posts() ) {
-            $query->the_post();
-            $items[] = $this->get_food_item_data( get_the_ID() );
+        // Generate HTML output.
+        ob_start();
+        if ( $query->have_posts() ) {
+            while ( $query->have_posts() ) {
+                $query->the_post();
+                $this->render_food_item_html( get_the_ID() );
+            }
+        } else {
+            echo '<p class="mj-no-items">' . esc_html__( 'No food items found.', 'mitzies-jerk' ) . '</p>';
         }
+        $html = ob_get_clean();
 
         wp_reset_postdata();
 
         wp_send_json_success( array(
-            'items'       => $items,
+            'html'        => $html,
             'total'       => $query->found_posts,
             'total_pages' => $query->max_num_pages,
         ) );
+    }
+
+    /**
+     * Render food item HTML for AJAX responses.
+     *
+     * @param int $post_id Post ID.
+     */
+    private function render_food_item_html( $post_id ) {
+        $price = get_post_meta( $post_id, '_mj_price', true );
+        $sale_price = get_post_meta( $post_id, '_mj_sale_price', true );
+        $stock_status = get_post_meta( $post_id, '_mj_stock_status', true );
+        $is_featured = get_post_meta( $post_id, '_mj_is_featured', true );
+        ?>
+        <div class="mj-food-item<?php echo $is_featured ? ' featured' : ''; ?><?php echo 'outofstock' === $stock_status ? ' out-of-stock' : ''; ?>">
+            <div class="mj-food-image">
+                <a href="<?php echo esc_url( get_permalink( $post_id ) ); ?>">
+                    <?php if ( has_post_thumbnail( $post_id ) ) : ?>
+                        <?php echo get_the_post_thumbnail( $post_id, 'medium' ); ?>
+                    <?php else : ?>
+                        <div class="mj-no-image"><span class="dashicons dashicons-food"></span></div>
+                    <?php endif; ?>
+                </a>
+                <?php if ( $sale_price ) : ?>
+                    <span class="mj-sale-badge"><?php esc_html_e( 'Sale!', 'mitzies-jerk' ); ?></span>
+                <?php endif; ?>
+                <?php if ( $is_featured ) : ?>
+                    <span class="mj-featured-badge"><?php esc_html_e( 'Featured', 'mitzies-jerk' ); ?></span>
+                <?php endif; ?>
+                <?php if ( 'outofstock' === $stock_status ) : ?>
+                    <span class="mj-stock-badge"><?php esc_html_e( 'Out of Stock', 'mitzies-jerk' ); ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="mj-food-content">
+                <h3 class="mj-food-title">
+                    <a href="<?php echo esc_url( get_permalink( $post_id ) ); ?>"><?php echo esc_html( get_the_title( $post_id ) ); ?></a>
+                </h3>
+                <div class="mj-food-excerpt">
+                    <?php echo wp_trim_words( get_the_excerpt( $post_id ), 15 ); ?>
+                </div>
+                <div class="mj-food-price">
+                    <?php if ( $sale_price ) : ?>
+                        <del><?php echo esc_html( mitzies_jerk_format_price( $price ) ); ?></del>
+                        <ins><?php echo esc_html( mitzies_jerk_format_price( $sale_price ) ); ?></ins>
+                    <?php else : ?>
+                        <?php echo esc_html( mitzies_jerk_format_price( $price ) ); ?>
+                    <?php endif; ?>
+                </div>
+                <div class="mj-food-actions">
+                    <?php if ( 'outofstock' !== $stock_status ) : ?>
+                        <button class="mj-add-to-cart-btn" data-item-id="<?php echo esc_attr( $post_id ); ?>">
+                            <span class="dashicons dashicons-cart"></span>
+                            <?php esc_html_e( 'Add to Cart', 'mitzies-jerk' ); ?>
+                        </button>
+                    <?php else : ?>
+                        <button class="mj-add-to-cart-btn disabled" disabled>
+                            <?php esc_html_e( 'Out of Stock', 'mitzies-jerk' ); ?>
+                        </button>
+                    <?php endif; ?>
+                    <a href="<?php echo esc_url( get_permalink( $post_id ) ); ?>" class="mj-view-btn">
+                        <?php esc_html_e( 'View', 'mitzies-jerk' ); ?>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 
     /**
