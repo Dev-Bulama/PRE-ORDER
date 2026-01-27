@@ -134,6 +134,9 @@ function mitzies_jerk_run() {
         return;
     }
 
+    // Load helper functions.
+    require_once MITZIES_JERK_PATH . 'includes/functions.php';
+
     require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk.php';
 
     $plugin = new Mitzies_Jerk();

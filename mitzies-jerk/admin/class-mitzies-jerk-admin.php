@@ -213,6 +213,16 @@ class Mitzies_Jerk_Admin {
             'mj-settings',
             array( $this, 'render_settings_page' )
         );
+
+        // Documentation submenu.
+        add_submenu_page(
+            'mitzies-jerk',
+            __( 'Help & Documentation', 'mitzies-jerk' ),
+            __( 'Help & Docs', 'mitzies-jerk' ),
+            'manage_options',
+            'mj-documentation',
+            array( $this, 'render_documentation_page' )
+        );
     }
 
     /**
@@ -220,6 +230,13 @@ class Mitzies_Jerk_Admin {
      */
     public function render_dashboard_page() {
         include MITZIES_JERK_PATH . 'admin/partials/dashboard.php';
+    }
+
+    /**
+     * Render documentation page.
+     */
+    public function render_documentation_page() {
+        include MITZIES_JERK_PATH . 'admin/partials/documentation.php';
     }
 
     /**
