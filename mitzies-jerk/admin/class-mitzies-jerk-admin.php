@@ -393,7 +393,7 @@ class Mitzies_Jerk_Admin {
         // Email templates - Order Ready (Customer).
         $sanitized['email_order_ready_subject'] = sanitize_text_field( $input['email_order_ready_subject'] ?? '' );
         $sanitized['email_order_ready_heading'] = sanitize_text_field( $input['email_order_ready_heading'] ?? '' );
-        $sanitized['email_order_ready_body'] = sanitize_textarea_field( $input['email_order_ready_body'] ?? '' )
+        $sanitized['email_order_ready_body'] = sanitize_textarea_field( $input['email_order_ready_body'] ?? '' );
 
         // Display settings.
         $sanitized['items_per_page'] = absint( $input['items_per_page'] ?? 12 );
