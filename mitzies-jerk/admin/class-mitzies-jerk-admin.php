@@ -368,6 +368,33 @@ class Mitzies_Jerk_Admin {
         $sanitized['email_from_name'] = sanitize_text_field( $input['email_from_name'] ?? get_bloginfo( 'name' ) );
         $sanitized['email_from_address'] = sanitize_email( $input['email_from_address'] ?? get_option( 'admin_email' ) );
 
+        // Email appearance.
+        $sanitized['email_header_bg_color'] = sanitize_hex_color( $input['email_header_bg_color'] ?? '#e74c3c' );
+        $sanitized['email_header_text_color'] = sanitize_hex_color( $input['email_header_text_color'] ?? '#ffffff' );
+        $sanitized['email_body_bg_color'] = sanitize_hex_color( $input['email_body_bg_color'] ?? '#f5f5f5' );
+        $sanitized['email_body_text_color'] = sanitize_hex_color( $input['email_body_text_color'] ?? '#333333' );
+        $sanitized['email_footer_text'] = sanitize_text_field( $input['email_footer_text'] ?? '' );
+
+        // Email templates - New Order (Admin).
+        $sanitized['email_new_order_subject'] = sanitize_text_field( $input['email_new_order_subject'] ?? '' );
+        $sanitized['email_new_order_heading'] = sanitize_text_field( $input['email_new_order_heading'] ?? '' );
+        $sanitized['email_new_order_body'] = sanitize_textarea_field( $input['email_new_order_body'] ?? '' );
+
+        // Email templates - Order Confirmation (Customer).
+        $sanitized['email_order_confirmation_subject'] = sanitize_text_field( $input['email_order_confirmation_subject'] ?? '' );
+        $sanitized['email_order_confirmation_heading'] = sanitize_text_field( $input['email_order_confirmation_heading'] ?? '' );
+        $sanitized['email_order_confirmation_body'] = sanitize_textarea_field( $input['email_order_confirmation_body'] ?? '' );
+
+        // Email templates - Order Status Update (Customer).
+        $sanitized['email_order_status_subject'] = sanitize_text_field( $input['email_order_status_subject'] ?? '' );
+        $sanitized['email_order_status_heading'] = sanitize_text_field( $input['email_order_status_heading'] ?? '' );
+        $sanitized['email_order_status_body'] = sanitize_textarea_field( $input['email_order_status_body'] ?? '' );
+
+        // Email templates - Order Ready (Customer).
+        $sanitized['email_order_ready_subject'] = sanitize_text_field( $input['email_order_ready_subject'] ?? '' );
+        $sanitized['email_order_ready_heading'] = sanitize_text_field( $input['email_order_ready_heading'] ?? '' );
+        $sanitized['email_order_ready_body'] = sanitize_textarea_field( $input['email_order_ready_body'] ?? '' )
+
         // Display settings.
         $sanitized['items_per_page'] = absint( $input['items_per_page'] ?? 12 );
         $sanitized['enable_guest_checkout'] = ! empty( $input['enable_guest_checkout'] );

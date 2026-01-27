@@ -353,7 +353,29 @@ $currencies = array(
                 <?php endforeach; ?>
             </div>
 
-        <?php elseif ( 'email' === $active_tab ) : ?>
+        <?php elseif ( 'email' === $active_tab ) :
+            // Email template defaults.
+            $email_template_defaults = array(
+                'email_header_bg_color' => '#e74c3c',
+                'email_header_text_color' => '#ffffff',
+                'email_body_bg_color' => '#f5f5f5',
+                'email_body_text_color' => '#333333',
+                'email_footer_text' => sprintf( __( 'Thank you for ordering from %s!', 'mitzies-jerk' ), get_bloginfo( 'name' ) ),
+                'email_new_order_subject' => __( 'New Order #{order_number} - {site_name}', 'mitzies-jerk' ),
+                'email_new_order_heading' => __( 'New Order Received!', 'mitzies-jerk' ),
+                'email_new_order_body' => __( "A new order has been placed on your store.\n\nOrder Number: {order_number}\nCustomer: {customer_name}\nEmail: {customer_email}\nTotal: {order_total}\nDelivery Date: {delivery_date}", 'mitzies-jerk' ),
+                'email_order_confirmation_subject' => __( 'Order Confirmation #{order_number} - {site_name}', 'mitzies-jerk' ),
+                'email_order_confirmation_heading' => __( 'Thank You for Your Order!', 'mitzies-jerk' ),
+                'email_order_confirmation_body' => __( "Hi {customer_name},\n\nThank you for your order! We've received your order and will begin preparing it for delivery.\n\nOrder Number: {order_number}\nDelivery Date: {delivery_date}\nTotal: {order_total}\n\nWe'll send you another email when your order is ready for delivery.", 'mitzies-jerk' ),
+                'email_order_status_subject' => __( 'Order #{order_number} Status Update - {site_name}', 'mitzies-jerk' ),
+                'email_order_status_heading' => __( 'Order Status Update', 'mitzies-jerk' ),
+                'email_order_status_body' => __( "Hi {customer_name},\n\nYour order #{order_number} status has been updated to: {order_status}\n\nYou can track your order anytime using your order number.\n\nThank you for choosing us!", 'mitzies-jerk' ),
+                'email_order_ready_subject' => __( 'Your Order #{order_number} is Ready! - {site_name}', 'mitzies-jerk' ),
+                'email_order_ready_heading' => __( 'Your Order is Ready for Delivery!', 'mitzies-jerk' ),
+                'email_order_ready_body' => __( "Hi {customer_name},\n\nGreat news! Your order #{order_number} has been prepared and is ready for delivery.\n\nDelivery scheduled for: {delivery_date}\n\nPlease ensure someone is available to receive your order.\n\nThank you!", 'mitzies-jerk' ),
+            );
+            $options = wp_parse_args( $options, $email_template_defaults );
+        ?>
             <!-- Email Settings -->
             <div class="mj-settings-section">
                 <h2><?php esc_html_e( 'Email Configuration', 'mitzies-jerk' ); ?></h2>
@@ -381,7 +403,162 @@ $currencies = array(
                         </td>
                     </tr>
                 </table>
+            </div>
 
+            <div class="mj-settings-section">
+                <h2><?php esc_html_e( 'Email Appearance', 'mitzies-jerk' ); ?></h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="email_header_bg_color"><?php esc_html_e( 'Header Background Color', 'mitzies-jerk' ); ?></label></th>
+                        <td>
+                            <input type="text" name="mitzies_jerk_settings[email_header_bg_color]" id="email_header_bg_color"
+                                   value="<?php echo esc_attr( $options['email_header_bg_color'] ); ?>" class="mj-color-picker">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="email_header_text_color"><?php esc_html_e( 'Header Text Color', 'mitzies-jerk' ); ?></label></th>
+                        <td>
+                            <input type="text" name="mitzies_jerk_settings[email_header_text_color]" id="email_header_text_color"
+                                   value="<?php echo esc_attr( $options['email_header_text_color'] ); ?>" class="mj-color-picker">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="email_body_bg_color"><?php esc_html_e( 'Body Background Color', 'mitzies-jerk' ); ?></label></th>
+                        <td>
+                            <input type="text" name="mitzies_jerk_settings[email_body_bg_color]" id="email_body_bg_color"
+                                   value="<?php echo esc_attr( $options['email_body_bg_color'] ); ?>" class="mj-color-picker">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="email_footer_text"><?php esc_html_e( 'Footer Text', 'mitzies-jerk' ); ?></label></th>
+                        <td>
+                            <input type="text" name="mitzies_jerk_settings[email_footer_text]" id="email_footer_text"
+                                   value="<?php echo esc_attr( $options['email_footer_text'] ); ?>" class="large-text">
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="mj-settings-section">
+                <h2><?php esc_html_e( 'Email Templates', 'mitzies-jerk' ); ?></h2>
+                <p class="description"><?php esc_html_e( 'Customize email content. Available placeholders: {order_number}, {customer_name}, {customer_email}, {order_total}, {delivery_date}, {order_status}, {site_name}, {site_url}', 'mitzies-jerk' ); ?></p>
+
+                <div class="mj-email-templates">
+                    <!-- New Order (Admin) -->
+                    <div class="mj-email-template">
+                        <h3><?php esc_html_e( 'New Order Notification (Admin)', 'mitzies-jerk' ); ?></h3>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><label for="email_new_order_subject"><?php esc_html_e( 'Subject', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_new_order_subject]" id="email_new_order_subject"
+                                           value="<?php echo esc_attr( $options['email_new_order_subject'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_new_order_heading"><?php esc_html_e( 'Heading', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_new_order_heading]" id="email_new_order_heading"
+                                           value="<?php echo esc_attr( $options['email_new_order_heading'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_new_order_body"><?php esc_html_e( 'Body', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <textarea name="mitzies_jerk_settings[email_new_order_body]" id="email_new_order_body"
+                                              rows="6" class="large-text"><?php echo esc_textarea( $options['email_new_order_body'] ); ?></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Order Confirmation (Customer) -->
+                    <div class="mj-email-template">
+                        <h3><?php esc_html_e( 'Order Confirmation (Customer)', 'mitzies-jerk' ); ?></h3>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><label for="email_order_confirmation_subject"><?php esc_html_e( 'Subject', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_order_confirmation_subject]" id="email_order_confirmation_subject"
+                                           value="<?php echo esc_attr( $options['email_order_confirmation_subject'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_order_confirmation_heading"><?php esc_html_e( 'Heading', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_order_confirmation_heading]" id="email_order_confirmation_heading"
+                                           value="<?php echo esc_attr( $options['email_order_confirmation_heading'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_order_confirmation_body"><?php esc_html_e( 'Body', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <textarea name="mitzies_jerk_settings[email_order_confirmation_body]" id="email_order_confirmation_body"
+                                              rows="6" class="large-text"><?php echo esc_textarea( $options['email_order_confirmation_body'] ); ?></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Order Status Update (Customer) -->
+                    <div class="mj-email-template">
+                        <h3><?php esc_html_e( 'Order Status Update (Customer)', 'mitzies-jerk' ); ?></h3>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><label for="email_order_status_subject"><?php esc_html_e( 'Subject', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_order_status_subject]" id="email_order_status_subject"
+                                           value="<?php echo esc_attr( $options['email_order_status_subject'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_order_status_heading"><?php esc_html_e( 'Heading', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_order_status_heading]" id="email_order_status_heading"
+                                           value="<?php echo esc_attr( $options['email_order_status_heading'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_order_status_body"><?php esc_html_e( 'Body', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <textarea name="mitzies_jerk_settings[email_order_status_body]" id="email_order_status_body"
+                                              rows="6" class="large-text"><?php echo esc_textarea( $options['email_order_status_body'] ); ?></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Order Ready (Customer) -->
+                    <div class="mj-email-template">
+                        <h3><?php esc_html_e( 'Order Ready for Delivery (Customer)', 'mitzies-jerk' ); ?></h3>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row"><label for="email_order_ready_subject"><?php esc_html_e( 'Subject', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_order_ready_subject]" id="email_order_ready_subject"
+                                           value="<?php echo esc_attr( $options['email_order_ready_subject'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_order_ready_heading"><?php esc_html_e( 'Heading', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <input type="text" name="mitzies_jerk_settings[email_order_ready_heading]" id="email_order_ready_heading"
+                                           value="<?php echo esc_attr( $options['email_order_ready_heading'] ); ?>" class="large-text">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><label for="email_order_ready_body"><?php esc_html_e( 'Body', 'mitzies-jerk' ); ?></label></th>
+                                <td>
+                                    <textarea name="mitzies_jerk_settings[email_order_ready_body]" id="email_order_ready_body"
+                                              rows="6" class="large-text"><?php echo esc_textarea( $options['email_order_ready_body'] ); ?></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mj-settings-section">
                 <h3><?php esc_html_e( 'Test Email', 'mitzies-jerk' ); ?></h3>
                 <p>
                     <input type="email" id="mj-test-email" placeholder="<?php esc_attr_e( 'Enter email address', 'mitzies-jerk' ); ?>" class="regular-text">
