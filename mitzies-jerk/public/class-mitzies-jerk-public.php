@@ -80,27 +80,42 @@ class Mitzies_Jerk_Public {
             $cart_total = $mitzies_jerk->cart->get_total();
         }
 
-        wp_localize_script( $this->plugin_name, 'mitziesJerk', array(
-            'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
-            'nonce'        => wp_create_nonce( 'mj_ajax_nonce' ),
-            'cartUrl'      => get_permalink( get_option( 'mitzies_jerk_cart_page_id' ) ),
-            'checkoutUrl'  => get_permalink( get_option( 'mitzies_jerk_checkout_page_id' ) ),
-            'cartCount'    => $cart_count,
-            'cartTotal'    => $cart_total,
-            'currencySymbol' => mitzies_jerk_get_option( 'currency_symbol', '$' ),
-            'strings'      => array(
-                'addedToCart'    => __( 'Added to cart!', 'mitzies-jerk' ),
-                'addingToCart'   => __( 'Adding...', 'mitzies-jerk' ),
-                'viewCart'       => __( 'View Cart', 'mitzies-jerk' ),
-                'checkout'       => __( 'Checkout', 'mitzies-jerk' ),
-                'removeItem'     => __( 'Remove item?', 'mitzies-jerk' ),
-                'updating'       => __( 'Updating...', 'mitzies-jerk' ),
-                'processing'     => __( 'Processing...', 'mitzies-jerk' ),
-                'pleaseWait'     => __( 'Please wait...', 'mitzies-jerk' ),
-                'error'          => __( 'An error occurred. Please try again.', 'mitzies-jerk' ),
-                'invalidDate'    => __( 'Please select a valid delivery date.', 'mitzies-jerk' ),
-                'invalidTime'    => __( 'Please select a delivery time slot.', 'mitzies-jerk' ),
-                'fillRequired'   => __( 'Please fill in all required fields.', 'mitzies-jerk' ),
+        // Get business hours from settings.
+        $business_hours = mitzies_jerk_get_option( 'business_hours', array() );
+
+        // Localize script with correct variable name expected by JS.
+        wp_localize_script( $this->plugin_name, 'mitzies_jerk_params', array(
+            'ajax_url'            => admin_url( 'admin-ajax.php' ),
+            'nonce'               => wp_create_nonce( 'mj_ajax_nonce' ),
+            'cart_url'            => get_permalink( get_option( 'mitzies_jerk_cart_page_id' ) ),
+            'checkout_url'        => get_permalink( get_option( 'mitzies_jerk_checkout_page_id' ) ),
+            'menu_url'            => get_permalink( get_option( 'mitzies_jerk_menu_page_id' ) ),
+            'cart_count'          => $cart_count,
+            'cart_total'          => $cart_total,
+            'currency_symbol'     => mitzies_jerk_get_option( 'currency_symbol', '$' ),
+            'min_preorder_hours'  => mitzies_jerk_get_option( 'min_preorder_hours', 2 ),
+            'max_preorder_days'   => mitzies_jerk_get_option( 'max_preorder_days', 7 ),
+            'business_hours'      => $business_hours,
+            'i18n'                => array(
+                'add_to_cart'       => __( 'Add to Cart', 'mitzies-jerk' ),
+                'added'             => __( 'Added!', 'mitzies-jerk' ),
+                'adding'            => __( 'Adding...', 'mitzies-jerk' ),
+                'view_cart'         => __( 'View Cart', 'mitzies-jerk' ),
+                'checkout'          => __( 'Checkout', 'mitzies-jerk' ),
+                'confirm_remove'    => __( 'Remove this item from cart?', 'mitzies-jerk' ),
+                'confirm_reorder'   => __( 'Add all items from this order to your cart?', 'mitzies-jerk' ),
+                'updating'          => __( 'Updating...', 'mitzies-jerk' ),
+                'processing'        => __( 'Processing...', 'mitzies-jerk' ),
+                'place_order'       => __( 'Place Order', 'mitzies-jerk' ),
+                'please_wait'       => __( 'Please wait...', 'mitzies-jerk' ),
+                'error'             => __( 'An error occurred. Please try again.', 'mitzies-jerk' ),
+                'cart_empty'        => __( 'Your cart is empty.', 'mitzies-jerk' ),
+                'continue_shopping' => __( 'Continue Shopping', 'mitzies-jerk' ),
+                'enter_coupon'      => __( 'Please enter a coupon code.', 'mitzies-jerk' ),
+                'enter_order_number' => __( 'Please enter your order number.', 'mitzies-jerk' ),
+                'select_payment'    => __( 'Please select a payment method.', 'mitzies-jerk' ),
+                'fill_required'     => __( 'Please fill in all required fields.', 'mitzies-jerk' ),
+                'closed_day'        => __( 'Sorry, we are closed on this day.', 'mitzies-jerk' ),
             ),
         ) );
     }

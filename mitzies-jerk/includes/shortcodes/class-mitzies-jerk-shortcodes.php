@@ -38,7 +38,7 @@ class Mitzies_Jerk_Shortcodes {
      * @param array $atts Shortcode attributes.
      * @return string
      */
-    public function food_menu( $atts ) {
+    public static function food_menu( $atts ) {
         $atts = shortcode_atts( array(
             'category'   => '',
             'per_page'   => mitzies_jerk_get_option( 'items_per_page', 12 ),
@@ -115,7 +115,7 @@ class Mitzies_Jerk_Shortcodes {
             <div class="mj-food-grid">
                 <?php if ( $query->have_posts() ) : ?>
                     <?php while ( $query->have_posts() ) : $query->the_post(); ?>
-                        <?php $this->render_food_item( get_the_ID() ); ?>
+                        <?php self::render_food_item( get_the_ID() ); ?>
                     <?php endwhile; ?>
                 <?php else : ?>
                     <p class="mj-no-items"><?php esc_html_e( 'No food items found.', 'mitzies-jerk' ); ?></p>
@@ -147,7 +147,7 @@ class Mitzies_Jerk_Shortcodes {
      *
      * @param int $post_id Post ID.
      */
-    private function render_food_item( $post_id ) {
+    private static function render_food_item( $post_id ) {
         $price = get_post_meta( $post_id, '_mj_price', true );
         $sale_price = get_post_meta( $post_id, '_mj_sale_price', true );
         $stock_status = get_post_meta( $post_id, '_mj_stock_status', true );
@@ -179,7 +179,7 @@ class Mitzies_Jerk_Shortcodes {
                 </h3>
                 <?php if ( $rating > 0 ) : ?>
                     <div class="mj-food-rating">
-                        <?php $this->render_stars( $rating ); ?>
+                        <?php self::render_stars( $rating ); ?>
                         <span class="mj-rating-value">(<?php echo esc_html( $rating ); ?>)</span>
                     </div>
                 <?php endif; ?>
@@ -196,7 +196,7 @@ class Mitzies_Jerk_Shortcodes {
                 </div>
                 <div class="mj-food-actions">
                     <?php if ( 'outofstock' !== $stock_status ) : ?>
-                        <button class="mj-add-to-cart-btn" data-product-id="<?php echo esc_attr( $post_id ); ?>">
+                        <button class="mj-add-to-cart-btn" data-item-id="<?php echo esc_attr( $post_id ); ?>">
                             <span class="dashicons dashicons-cart"></span>
                             <?php esc_html_e( 'Add to Cart', 'mitzies-jerk' ); ?>
                         </button>
@@ -219,7 +219,7 @@ class Mitzies_Jerk_Shortcodes {
      *
      * @param float $rating Rating value.
      */
-    private function render_stars( $rating ) {
+    private static function render_stars( $rating ) {
         $full_stars = floor( $rating );
         $half_star = ( $rating - $full_stars ) >= 0.5;
         $empty_stars = 5 - $full_stars - ( $half_star ? 1 : 0 );

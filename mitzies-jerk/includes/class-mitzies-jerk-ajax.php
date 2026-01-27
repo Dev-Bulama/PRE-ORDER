@@ -23,25 +23,46 @@ class Mitzies_Jerk_Ajax {
     public function add_to_cart() {
         check_ajax_referer( 'mj_ajax_nonce', 'nonce' );
 
-        $food_item_id = isset( $_POST['food_item_id'] ) ? absint( $_POST['food_item_id'] ) : 0;
+        // Accept both 'food_item_id' and 'item_id' for compatibility.
+        $food_item_id = 0;
+        if ( isset( $_POST['food_item_id'] ) ) {
+            $food_item_id = absint( $_POST['food_item_id'] );
+        } elseif ( isset( $_POST['item_id'] ) ) {
+            $food_item_id = absint( $_POST['item_id'] );
+        }
+
         $quantity = isset( $_POST['quantity'] ) ? absint( $_POST['quantity'] ) : 1;
-        $addons = isset( $_POST['addons'] ) ? array_map( 'absint', (array) $_POST['addons'] ) : array();
+
+        // Accept 'addons' or 'options' for compatibility.
+        $addons = array();
+        if ( isset( $_POST['addons'] ) ) {
+            $addons = array_map( 'absint', (array) $_POST['addons'] );
+        } elseif ( isset( $_POST['options'] ) && is_array( $_POST['options'] ) ) {
+            $addons = array_map( 'absint', (array) $_POST['options'] );
+        }
 
         if ( ! $food_item_id ) {
-            wp_send_json_error( __( 'Invalid food item.', 'mitzies-jerk' ) );
+            wp_send_json_error( array( 'message' => __( 'Invalid food item.', 'mitzies-jerk' ) ) );
         }
 
         global $mitzies_jerk;
+
+        if ( ! $mitzies_jerk || ! $mitzies_jerk->cart ) {
+            wp_send_json_error( array( 'message' => __( 'Cart not initialized.', 'mitzies-jerk' ) ) );
+        }
+
         $result = $mitzies_jerk->cart->add_to_cart( $food_item_id, $quantity, $addons );
 
         if ( is_wp_error( $result ) ) {
-            wp_send_json_error( $result->get_error_message() );
+            wp_send_json_error( array( 'message' => $result->get_error_message() ) );
         }
+
+        $cart_data = $mitzies_jerk->cart->get_cart_for_display();
 
         wp_send_json_success( array(
             'message'    => __( 'Item added to cart!', 'mitzies-jerk' ),
             'cart_count' => $mitzies_jerk->cart->get_cart_count(),
-            'cart'       => $mitzies_jerk->cart->get_cart_for_display(),
+            'cart'       => $cart_data,
         ) );
     }
 

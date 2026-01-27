@@ -687,30 +687,48 @@ class Mitzies_Jerk_Cart {
                 continue;
             }
 
-            $items[ $key ] = array(
-                'key'          => $key,
-                'food_item_id' => $item['food_item_id'],
-                'name'         => $food_item->post_title,
-                'quantity'     => $item['quantity'],
-                'price'        => $item['price'],
-                'addons'       => $item['addons'],
-                'addon_total'  => $item['addon_total'],
-                'line_total'   => ( $item['price'] + $item['addon_total'] ) * $item['quantity'],
-                'image'        => get_the_post_thumbnail_url( $item['food_item_id'], 'thumbnail' ),
-                'permalink'    => get_permalink( $item['food_item_id'] ),
+            $line_total = ( $item['price'] + $item['addon_total'] ) * $item['quantity'];
+
+            $items[] = array(
+                'key'               => $key,
+                'food_item_id'      => $item['food_item_id'],
+                'name'              => $food_item->post_title,
+                'quantity'          => $item['quantity'],
+                'price'             => $item['price'],
+                'price_formatted'   => mitzies_jerk_format_price( $item['price'] ),
+                'addons'            => $item['addons'],
+                'addon_total'       => $item['addon_total'],
+                'line_total'        => $line_total,
+                'subtotal'          => $line_total,
+                'subtotal_formatted' => mitzies_jerk_format_price( $line_total ),
+                'thumbnail'         => get_the_post_thumbnail_url( $item['food_item_id'], 'thumbnail' ),
+                'image'             => get_the_post_thumbnail_url( $item['food_item_id'], 'thumbnail' ),
+                'permalink'         => get_permalink( $item['food_item_id'] ),
             );
         }
 
+        $subtotal = isset( $this->totals['subtotal'] ) ? $this->totals['subtotal'] : 0;
+        $addon_total = isset( $this->totals['addon_total'] ) ? $this->totals['addon_total'] : 0;
+        $discount = isset( $this->totals['discount'] ) ? $this->totals['discount'] : 0;
+        $delivery_fee = isset( $this->totals['delivery_fee'] ) ? $this->totals['delivery_fee'] : 0;
+        $tax = isset( $this->totals['tax'] ) ? $this->totals['tax'] : 0;
+        $total = isset( $this->totals['total'] ) ? $this->totals['total'] : 0;
+
         return array(
-            'items'           => $items,
-            'item_count'      => $this->get_cart_count(),
-            'subtotal'        => $this->totals['subtotal'],
-            'addon_total'     => $this->totals['addon_total'],
-            'discount'        => $this->totals['discount'],
-            'delivery_fee'    => $this->totals['delivery_fee'],
-            'tax'             => $this->totals['tax'],
-            'total'           => $this->totals['total'],
-            'applied_coupons' => $this->applied_coupons,
+            'items'              => $items,
+            'item_count'         => $this->get_cart_count(),
+            'subtotal'           => $subtotal,
+            'subtotal_formatted' => mitzies_jerk_format_price( $subtotal + $addon_total ),
+            'addon_total'        => $addon_total,
+            'discount'           => $discount,
+            'discount_formatted' => mitzies_jerk_format_price( $discount ),
+            'delivery_fee'       => $delivery_fee,
+            'delivery_fee_formatted' => mitzies_jerk_format_price( $delivery_fee ),
+            'tax'                => $tax,
+            'tax_formatted'      => mitzies_jerk_format_price( $tax ),
+            'total'              => $total,
+            'total_formatted'    => mitzies_jerk_format_price( $total ),
+            'applied_coupons'    => $this->applied_coupons,
         );
     }
 }
