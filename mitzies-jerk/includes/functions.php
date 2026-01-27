@@ -11,21 +11,47 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Format price.
+ * Helper function to get plugin options.
  *
+ * @since 1.0.0
+ * @param string $option Option name.
+ * @param mixed  $default Default value.
+ * @return mixed
+ */
+function mitzies_jerk_get_option( $option, $default = '' ) {
+    $options = get_option( 'mitzies_jerk_settings', array() );
+    return isset( $options[ $option ] ) ? $options[ $option ] : $default;
+}
+
+/**
+ * Helper function to update plugin options.
+ *
+ * @since 1.0.0
+ * @param string $option Option name.
+ * @param mixed  $value Option value.
+ * @return bool
+ */
+function mitzies_jerk_update_option( $option, $value ) {
+    $options = get_option( 'mitzies_jerk_settings', array() );
+    $options[ $option ] = $value;
+    return update_option( 'mitzies_jerk_settings', $options );
+}
+
+/**
+ * Helper function to format price.
+ *
+ * @since 1.0.0
  * @param float $price Price to format.
- * @return string Formatted price.
+ * @return string
  */
 function mitzies_jerk_format_price( $price ) {
-    $settings = get_option( 'mitzies_jerk_settings', array() );
+    $currency_symbol = mitzies_jerk_get_option( 'currency_symbol', '$' );
+    $currency_position = mitzies_jerk_get_option( 'currency_position', 'left' );
+    $decimal_places = mitzies_jerk_get_option( 'decimal_places', 2 );
+    $thousands_sep = mitzies_jerk_get_option( 'thousands_separator', ',' );
+    $decimal_sep = mitzies_jerk_get_option( 'decimal_separator', '.' );
 
-    $currency_symbol = isset( $settings['currency_symbol'] ) ? $settings['currency_symbol'] : '$';
-    $currency_position = isset( $settings['currency_position'] ) ? $settings['currency_position'] : 'left';
-    $decimal_places = isset( $settings['decimal_places'] ) ? absint( $settings['decimal_places'] ) : 2;
-    $thousands_sep = isset( $settings['thousands_separator'] ) ? $settings['thousands_separator'] : ',';
-    $decimal_sep = isset( $settings['decimal_separator'] ) ? $settings['decimal_separator'] : '.';
-
-    $formatted = number_format( floatval( $price ), $decimal_places, $decimal_sep, $thousands_sep );
+    $formatted = number_format( (float) $price, $decimal_places, $decimal_sep, $thousands_sep );
 
     if ( 'left' === $currency_position ) {
         return $currency_symbol . $formatted;
@@ -33,39 +59,138 @@ function mitzies_jerk_format_price( $price ) {
         return $currency_symbol . ' ' . $formatted;
     } elseif ( 'right' === $currency_position ) {
         return $formatted . $currency_symbol;
-    } else {
+    } elseif ( 'right_space' === $currency_position ) {
         return $formatted . ' ' . $currency_symbol;
     }
+
+    return $currency_symbol . $formatted;
 }
 
 /**
- * Get option value.
+ * Helper function to get minimum pre-order hours.
  *
- * @param string $key     Option key.
- * @param mixed  $default Default value.
- * @return mixed Option value.
+ * @since 1.0.0
+ * @return int
  */
-function mitzies_jerk_get_option( $key, $default = '' ) {
-    $settings = get_option( 'mitzies_jerk_settings', array() );
-    return isset( $settings[ $key ] ) ? $settings[ $key ] : $default;
+function mitzies_jerk_get_min_preorder_hours() {
+    return (int) mitzies_jerk_get_option( 'min_preorder_hours', 24 );
 }
 
 /**
- * Get order statuses.
+ * Helper function to validate delivery date/time.
  *
- * @return array Order statuses.
+ * @since 1.0.0
+ * @param string $datetime Delivery datetime string.
+ * @return bool|WP_Error
+ */
+function mitzies_jerk_validate_delivery_datetime( $datetime ) {
+    $min_hours = mitzies_jerk_get_min_preorder_hours();
+    $delivery_time = strtotime( $datetime );
+    $min_time = strtotime( '+' . $min_hours . ' hours' );
+
+    if ( ! $delivery_time ) {
+        return new WP_Error( 'invalid_datetime', __( 'Invalid delivery date/time format.', 'mitzies-jerk' ) );
+    }
+
+    if ( $delivery_time < $min_time ) {
+        return new WP_Error(
+            'too_soon',
+            sprintf(
+                /* translators: %d: Minimum pre-order hours */
+                __( 'Delivery must be scheduled at least %d hours in advance.', 'mitzies-jerk' ),
+                $min_hours
+            )
+        );
+    }
+
+    // Check if delivery day is allowed.
+    $allowed_days = mitzies_jerk_get_option( 'delivery_days', array( 0, 1, 2, 3, 4, 5, 6 ) );
+    $delivery_day = (int) date( 'w', $delivery_time );
+
+    if ( ! in_array( $delivery_day, $allowed_days, true ) ) {
+        return new WP_Error( 'day_not_allowed', __( 'Delivery is not available on the selected day.', 'mitzies-jerk' ) );
+    }
+
+    // Check delivery time slots.
+    $time_slots = mitzies_jerk_get_option( 'delivery_time_slots', array() );
+    if ( ! empty( $time_slots ) ) {
+        $delivery_hour = (int) date( 'H', $delivery_time );
+        $delivery_minute = (int) date( 'i', $delivery_time );
+        $valid_slot = false;
+
+        foreach ( $time_slots as $slot ) {
+            $start = explode( ':', $slot['start'] );
+            $end = explode( ':', $slot['end'] );
+
+            $slot_start = (int) $start[0] * 60 + (int) $start[1];
+            $slot_end = (int) $end[0] * 60 + (int) $end[1];
+            $delivery_minutes = $delivery_hour * 60 + $delivery_minute;
+
+            if ( $delivery_minutes >= $slot_start && $delivery_minutes <= $slot_end ) {
+                $valid_slot = true;
+                break;
+            }
+        }
+
+        if ( ! $valid_slot ) {
+            return new WP_Error( 'invalid_time_slot', __( 'Please select a valid delivery time slot.', 'mitzies-jerk' ) );
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Helper function to get order statuses.
+ *
+ * @since 1.0.0
+ * @return array
  */
 function mitzies_jerk_get_order_statuses() {
     return array(
-        'mj-pending'    => __( 'Pending', 'mitzies-jerk' ),
-        'mj-paid'       => __( 'Paid', 'mitzies-jerk' ),
-        'mj-processing' => __( 'Processing', 'mitzies-jerk' ),
-        'mj-preparing'  => __( 'Preparing', 'mitzies-jerk' ),
-        'mj-ready'      => __( 'Ready for Pickup', 'mitzies-jerk' ),
-        'mj-completed'  => __( 'Completed', 'mitzies-jerk' ),
-        'mj-cancelled'  => __( 'Cancelled', 'mitzies-jerk' ),
-        'mj-refunded'   => __( 'Refunded', 'mitzies-jerk' ),
+        'pending'    => __( 'Pending Payment', 'mitzies-jerk' ),
+        'paid'       => __( 'Paid', 'mitzies-jerk' ),
+        'processing' => __( 'Processing', 'mitzies-jerk' ),
+        'preparing'  => __( 'Preparing', 'mitzies-jerk' ),
+        'ready'      => __( 'Ready for Delivery', 'mitzies-jerk' ),
+        'delivering' => __( 'Out for Delivery', 'mitzies-jerk' ),
+        'completed'  => __( 'Completed', 'mitzies-jerk' ),
+        'cancelled'  => __( 'Cancelled', 'mitzies-jerk' ),
+        'refunded'   => __( 'Refunded', 'mitzies-jerk' ),
+        'expired'    => __( 'Payment Expired', 'mitzies-jerk' ),
+        'failed'     => __( 'Payment Failed', 'mitzies-jerk' ),
     );
+}
+
+/**
+ * Helper function to log plugin events.
+ *
+ * @since 1.0.0
+ * @param string $message Log message.
+ * @param string $level Log level (info, warning, error).
+ * @param array  $context Additional context.
+ */
+function mitzies_jerk_log( $message, $level = 'info', $context = array() ) {
+    if ( ! mitzies_jerk_get_option( 'enable_logging', false ) ) {
+        return;
+    }
+
+    $log_entry = array(
+        'timestamp' => current_time( 'mysql' ),
+        'level'     => $level,
+        'message'   => $message,
+        'context'   => $context,
+    );
+
+    $logs = get_option( 'mitzies_jerk_logs', array() );
+    $logs[] = $log_entry;
+
+    // Keep only last 1000 log entries.
+    if ( count( $logs ) > 1000 ) {
+        $logs = array_slice( $logs, -1000 );
+    }
+
+    update_option( 'mitzies_jerk_logs', $logs );
 }
 
 /**
