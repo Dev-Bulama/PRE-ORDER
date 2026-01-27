@@ -138,11 +138,12 @@ class Mitzies_Jerk_Gateway_PayPal extends Mitzies_Jerk_Payment_Gateway {
 
         foreach ( $order_items as $item ) {
             $food_item = get_post( $item->food_item_id );
+            $item_name = $food_item ? $food_item->post_title : __( 'Food Item', 'mitzies-jerk' );
             $unit_amount = round( $item->subtotal / $item->quantity, 2 );
             $items_total += $unit_amount * $item->quantity;
 
             $items[] = array(
-                'name'        => $food_item->post_title,
+                'name'        => $item_name,
                 'quantity'    => strval( $item->quantity ),
                 'unit_amount' => array(
                     'currency_code' => $order->get( 'currency' ),

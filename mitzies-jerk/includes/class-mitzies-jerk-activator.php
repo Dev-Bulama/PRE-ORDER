@@ -391,6 +391,9 @@ class Mitzies_Jerk_Activator {
      * @since    1.0.0
      */
     private static function schedule_cron_events() {
+        // Add custom cron interval first, before scheduling events.
+        add_filter( 'cron_schedules', array( __CLASS__, 'add_cron_schedules' ) );
+
         // Check for expired orders every 5 minutes.
         if ( ! wp_next_scheduled( 'mj_check_expired_orders' ) ) {
             wp_schedule_event( time(), 'five_minutes', 'mj_check_expired_orders' );
@@ -405,14 +408,20 @@ class Mitzies_Jerk_Activator {
         if ( ! wp_next_scheduled( 'mj_send_reminder_emails' ) ) {
             wp_schedule_event( time(), 'hourly', 'mj_send_reminder_emails' );
         }
+    }
 
-        // Add custom cron interval.
-        add_filter( 'cron_schedules', function( $schedules ) {
-            $schedules['five_minutes'] = array(
-                'interval' => 300,
-                'display'  => __( 'Every 5 Minutes', 'mitzies-jerk' ),
-            );
-            return $schedules;
-        } );
+    /**
+     * Add custom cron schedules.
+     *
+     * @since    1.0.0
+     * @param array $schedules Existing schedules.
+     * @return array Modified schedules.
+     */
+    public static function add_cron_schedules( $schedules ) {
+        $schedules['five_minutes'] = array(
+            'interval' => 300,
+            'display'  => __( 'Every 5 Minutes', 'mitzies-jerk' ),
+        );
+        return $schedules;
     }
 }
