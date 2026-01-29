@@ -75,8 +75,42 @@
 
             var $btn = $(e.currentTarget);
             var itemId = $btn.data('item-id');
-            var quantity = $btn.closest('.mj-food-item, .mj-single-food-item').find('.mj-quantity-input').val() || 1;
-            var options = this.getItemOptions($btn.closest('.mj-food-item, .mj-single-food-item'));
+            var $container = $btn.closest('.mj-food-item, .mj-single-food-item, .mj-single-food-details');
+            var quantity = $container.find('.mj-quantity-input').val() || 1;
+
+            // Collect addons
+            var addons = {};
+            $container.find('.mj-addon-input:checked').each(function() {
+                var addonId = $(this).data('addon-id');
+                if (addonId) {
+                    addons[addonId] = 1;
+                }
+            });
+
+            // Collect extras
+            var extras = {};
+            $container.find('.mj-extras-group').each(function() {
+                var groupId = $(this).data('group');
+                var $checked = $(this).find('.mj-extra-input:checked');
+                if ($checked.length) {
+                    var values = [];
+                    $checked.each(function() {
+                        values.push($(this).val());
+                    });
+                    // For single select (radio), just use the value
+                    if ($checked.first().attr('type') === 'radio') {
+                        extras[groupId] = values[0];
+                    } else {
+                        extras[groupId] = values;
+                    }
+                }
+            });
+
+            // Collect special instructions
+            var specialInstructions = $container.find('.mj-special-instructions').val() || '';
+
+            // Legacy options support
+            var options = this.getItemOptions($container);
 
             if ($btn.hasClass('loading')) {
                 return;
@@ -93,6 +127,9 @@
                     nonce: mitzies_jerk_params.nonce,
                     item_id: itemId,
                     quantity: quantity,
+                    addons: addons,
+                    extras: extras,
+                    special_instructions: specialInstructions,
                     options: options
                 },
                 success: function(response) {

@@ -35,10 +35,31 @@ class Mitzies_Jerk_Ajax {
 
         // Accept 'addons' or 'options' for compatibility.
         $addons = array();
-        if ( isset( $_POST['addons'] ) ) {
-            $addons = array_map( 'absint', (array) $_POST['addons'] );
+        if ( isset( $_POST['addons'] ) && is_array( $_POST['addons'] ) ) {
+            // Handle new format where addons[id] = 1 (checked).
+            foreach ( $_POST['addons'] as $addon_id => $checked ) {
+                if ( $checked ) {
+                    $addons[] = absint( $addon_id );
+                }
+            }
         } elseif ( isset( $_POST['options'] ) && is_array( $_POST['options'] ) ) {
             $addons = array_map( 'absint', (array) $_POST['options'] );
+        }
+
+        // Handle extras.
+        $extras = array();
+        if ( isset( $_POST['extras'] ) && is_array( $_POST['extras'] ) ) {
+            foreach ( $_POST['extras'] as $group_id => $selected ) {
+                $extras[ sanitize_text_field( $group_id ) ] = is_array( $selected )
+                    ? array_map( 'absint', $selected )
+                    : absint( $selected );
+            }
+        }
+
+        // Handle special instructions.
+        $special_instructions = '';
+        if ( isset( $_POST['special_instructions'] ) ) {
+            $special_instructions = sanitize_textarea_field( wp_unslash( $_POST['special_instructions'] ) );
         }
 
         if ( ! $food_item_id ) {
@@ -51,7 +72,13 @@ class Mitzies_Jerk_Ajax {
             wp_send_json_error( array( 'message' => __( 'Cart not initialized.', 'mitzies-jerk' ) ) );
         }
 
-        $result = $mitzies_jerk->cart->add_to_cart( $food_item_id, $quantity, $addons );
+        // Build cart item data.
+        $cart_item_data = array(
+            'extras'               => $extras,
+            'special_instructions' => $special_instructions,
+        );
+
+        $result = $mitzies_jerk->cart->add_to_cart( $food_item_id, $quantity, $addons, $cart_item_data );
 
         if ( is_wp_error( $result ) ) {
             wp_send_json_error( array( 'message' => $result->get_error_message() ) );
