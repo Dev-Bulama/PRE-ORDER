@@ -592,15 +592,819 @@
 }
 
 /* ==========================================================================
-   Single Food Item
+   Single Food Item Page
    ========================================================================== */
 
+.mj-single-food-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
+
+/* Breadcrumb */
+.mj-breadcrumb {
+    margin-bottom: 25px;
+}
+
+.mj-breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+}
+
+.mj-breadcrumb-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mj-breadcrumb-list li::after {
+    content: '/';
+    color: var(--mj-gray-400);
+}
+
+.mj-breadcrumb-list li:last-child::after {
+    display: none;
+}
+
+.mj-breadcrumb-list a {
+    color: var(--mj-gray-600);
+    text-decoration: none;
+    transition: var(--mj-transition);
+}
+
+.mj-breadcrumb-list a:hover {
+    color: var(--mj-primary);
+}
+
+.mj-breadcrumb-list li.current {
+    color: var(--mj-gray-900);
+    font-weight: 600;
+}
+
+/* Single Food Item Layout */
 .mj-single-food-item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
     background: var(--mj-white);
     border-radius: var(--mj-border-radius-lg);
     overflow: hidden;
-    box-shadow: var(--mj-box-shadow);
+    box-shadow: var(--mj-box-shadow-lg);
+    padding: 30px;
 }
+
+/* Single Food Gallery */
+.mj-single-food-gallery {
+    position: relative;
+}
+
+.mj-single-food-image {
+    position: relative;
+    border-radius: var(--mj-border-radius-lg);
+    overflow: hidden;
+}
+
+.mj-single-food-image img.mj-main-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--mj-border-radius-lg);
+}
+
+.mj-no-image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    background: linear-gradient(135deg, var(--mj-gray-100) 0%, var(--mj-gray-200) 100%);
+    border-radius: var(--mj-border-radius-lg);
+    color: var(--mj-gray-400);
+    gap: 10px;
+}
+
+.mj-no-image-placeholder .dashicons {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+}
+
+/* Product Badges */
+.mj-badge-container {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10;
+}
+
+.mj-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--mj-white);
+}
+
+.mj-badge-sale {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.mj-badge-featured {
+    background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);
+}
+
+.mj-badge-spicy {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.mj-badge-veg {
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+}
+
+/* Single Food Details */
+.mj-single-food-details {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.mj-product-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mj-single-food-title {
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0;
+    color: var(--mj-gray-900);
+    line-height: 1.2;
+}
+
+.mj-single-food-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mj-category-tag {
+    display: inline-block;
+    padding: 5px 12px;
+    background: var(--mj-gray-100);
+    color: var(--mj-gray-700);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--mj-transition);
+}
+
+.mj-category-tag:hover {
+    background: var(--mj-primary);
+    color: var(--mj-white);
+}
+
+.mj-product-rating {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mj-product-rating .mj-stars .dashicons {
+    color: var(--mj-warning);
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.mj-product-rating .mj-rating-value {
+    color: var(--mj-gray-600);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Single Food Price */
+.mj-single-food-price {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mj-current-price {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--mj-primary);
+}
+
+.mj-original-price {
+    font-size: 20px;
+    color: var(--mj-gray-500);
+    text-decoration: line-through;
+    font-weight: 500;
+}
+
+/* Description */
+.mj-single-food-description {
+    color: var(--mj-gray-700);
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.mj-single-food-description p {
+    margin: 0 0 15px 0;
+}
+
+.mj-single-food-description p:last-child {
+    margin-bottom: 0;
+}
+
+/* Product Info Cards */
+.mj-product-info-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.mj-info-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--mj-gray-100);
+    border-radius: var(--mj-border-radius);
+    min-width: 130px;
+}
+
+.mj-info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--mj-white);
+    border-radius: 50%;
+    color: var(--mj-primary);
+}
+
+.mj-info-icon .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.mj-info-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mj-info-label {
+    font-size: 11px;
+    color: var(--mj-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mj-info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mj-gray-900);
+}
+
+.mj-stock-card.in-stock .mj-info-icon {
+    color: var(--mj-success);
+}
+
+.mj-stock-card.out-of-stock .mj-info-icon {
+    color: var(--mj-danger);
+}
+
+/* Product Sections */
+.mj-product-section {
+    padding: 20px;
+    background: var(--mj-gray-50);
+    border-radius: var(--mj-border-radius);
+    border: 1px solid var(--mj-gray-200);
+}
+
+.mj-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--mj-gray-900);
+    margin: 0 0 15px 0;
+}
+
+.mj-section-title .dashicons {
+    color: var(--mj-primary);
+}
+
+.mj-ingredients-text,
+.mj-allergens-text {
+    color: var(--mj-gray-700);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.mj-allergens-section {
+    background: rgba(231, 76, 60, 0.05);
+    border-color: rgba(231, 76, 60, 0.2);
+}
+
+/* Extras/Addons Section */
+.mj-extras-section {
+    background: var(--mj-white);
+    border: 2px solid var(--mj-gray-200);
+}
+
+.mj-addons-group,
+.mj-extras-group {
+    margin-bottom: 20px;
+}
+
+.mj-addons-group:last-child,
+.mj-extras-group:last-child {
+    margin-bottom: 0;
+}
+
+.mj-group-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mj-gray-800);
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mj-required-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: var(--mj-danger);
+    color: var(--mj-white);
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.mj-max-select {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--mj-gray-500);
+    text-transform: none;
+}
+
+.mj-addons-list,
+.mj-extras-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mj-addon-item,
+.mj-extra-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--mj-gray-50);
+    border: 2px solid var(--mj-gray-200);
+    border-radius: var(--mj-border-radius);
+    cursor: pointer;
+    transition: var(--mj-transition);
+}
+
+.mj-addon-item:hover,
+.mj-extra-item:hover {
+    border-color: var(--mj-primary);
+    background: rgba(231, 76, 60, 0.02);
+}
+
+.mj-addon-item:has(input:checked),
+.mj-extra-item:has(input:checked) {
+    border-color: var(--mj-primary);
+    background: rgba(231, 76, 60, 0.05);
+}
+
+.mj-addon-checkbox,
+.mj-extra-checkbox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mj-addon-checkbox input,
+.mj-extra-checkbox input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.mj-checkbox-custom {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--mj-gray-400);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--mj-transition);
+}
+
+.mj-extra-checkbox input[type="radio"] + .mj-checkbox-custom {
+    border-radius: 50%;
+}
+
+.mj-addon-checkbox input:checked + .mj-checkbox-custom,
+.mj-extra-checkbox input:checked + .mj-checkbox-custom {
+    background: var(--mj-primary);
+    border-color: var(--mj-primary);
+}
+
+.mj-addon-checkbox input:checked + .mj-checkbox-custom::after,
+.mj-extra-checkbox input:checked + .mj-checkbox-custom::after {
+    content: '✓';
+    color: var(--mj-white);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.mj-extra-checkbox input[type="radio"]:checked + .mj-checkbox-custom::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--mj-white);
+    border-radius: 50%;
+}
+
+.mj-addon-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.mj-addon-name,
+.mj-extra-name {
+    font-weight: 600;
+    color: var(--mj-gray-900);
+    font-size: 15px;
+    flex: 1;
+}
+
+.mj-addon-desc {
+    font-size: 13px;
+    color: var(--mj-gray-500);
+}
+
+.mj-addon-price,
+.mj-extra-price {
+    font-weight: 700;
+    color: var(--mj-primary);
+    font-size: 14px;
+}
+
+.mj-extra-price.mj-free {
+    color: var(--mj-success);
+}
+
+/* Special Instructions */
+.mj-instructions-section {
+    background: var(--mj-white);
+    border: 2px solid var(--mj-gray-200);
+}
+
+.mj-special-instructions {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--mj-gray-200);
+    border-radius: var(--mj-border-radius);
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    transition: var(--mj-transition);
+}
+
+.mj-special-instructions:focus {
+    outline: none;
+    border-color: var(--mj-primary);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+/* Add to Cart Section */
+.mj-add-to-cart-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+    padding: 25px;
+    background: linear-gradient(135deg, var(--mj-gray-100) 0%, var(--mj-gray-50) 100%);
+    border-radius: var(--mj-border-radius-lg);
+    border: 2px solid var(--mj-gray-200);
+}
+
+.mj-quantity-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mj-quantity-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mj-gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mj-quantity-controls {
+    display: flex;
+    align-items: center;
+    border: 2px solid var(--mj-gray-300);
+    border-radius: var(--mj-border-radius);
+    overflow: hidden;
+    background: var(--mj-white);
+}
+
+.mj-qty-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: var(--mj-gray-100);
+    color: var(--mj-gray-700);
+    cursor: pointer;
+    transition: var(--mj-transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mj-qty-btn:hover {
+    background: var(--mj-gray-200);
+}
+
+.mj-qty-btn .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.mj-quantity-controls .mj-quantity-input {
+    width: 60px;
+    height: 44px;
+    border: none;
+    border-left: 1px solid var(--mj-gray-300);
+    border-right: 1px solid var(--mj-gray-300);
+    text-align: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--mj-gray-900);
+}
+
+.mj-quantity-controls .mj-quantity-input:focus {
+    outline: none;
+}
+
+.mj-total-price {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.mj-total-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mj-gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mj-total-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--mj-primary);
+}
+
+.mj-add-to-cart-section .mj-add-to-cart-btn {
+    flex: 1;
+    min-width: 200px;
+    padding: 16px 30px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: var(--mj-border-radius);
+}
+
+.mj-add-to-cart-single .mj-btn-icon {
+    display: flex;
+    align-items: center;
+}
+
+.mj-add-to-cart-single .mj-btn-icon .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+/* View Cart Link */
+.mj-cart-link-wrapper {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.mj-view-cart-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 25px;
+    background: var(--mj-gray-100);
+    color: var(--mj-gray-700);
+    border-radius: var(--mj-border-radius);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--mj-transition);
+}
+
+.mj-view-cart-link:hover {
+    background: var(--mj-gray-200);
+    color: var(--mj-gray-900);
+}
+
+/* Out of Stock Notice */
+.mj-out-of-stock-notice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 30px;
+    background: rgba(231, 76, 60, 0.05);
+    border: 2px solid rgba(231, 76, 60, 0.2);
+    border-radius: var(--mj-border-radius);
+    text-align: center;
+}
+
+.mj-out-of-stock-notice .dashicons {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: var(--mj-danger);
+}
+
+.mj-out-of-stock-notice p {
+    margin: 0;
+    color: var(--mj-gray-700);
+    font-size: 16px;
+}
+
+/* Product Tags */
+.mj-product-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--mj-gray-200);
+}
+
+.mj-tags-label {
+    font-weight: 600;
+    color: var(--mj-gray-600);
+    font-size: 14px;
+}
+
+.mj-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mj-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--mj-gray-100);
+    color: var(--mj-gray-600);
+    border-radius: 15px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: var(--mj-transition);
+}
+
+.mj-tag:hover {
+    background: var(--mj-primary);
+    color: var(--mj-white);
+}
+
+/* Related Items */
+.mj-related-items {
+    margin-top: 50px;
+}
+
+.mj-section-heading {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--mj-gray-900);
+    margin: 0 0 25px 0;
+    text-align: center;
+}
+
+.mj-related-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+}
+
+/* Responsive Single Product Page */
+@media (max-width: 992px) {
+    .mj-single-food-item {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .mj-single-food-title {
+        font-size: 26px;
+    }
+
+    .mj-current-price {
+        font-size: 26px;
+    }
+
+    .mj-related-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .mj-single-food-container {
+        padding: 20px 15px;
+    }
+
+    .mj-single-food-item {
+        padding: 20px;
+    }
+
+    .mj-single-food-title {
+        font-size: 22px;
+    }
+
+    .mj-product-info-cards {
+        flex-direction: column;
+    }
+
+    .mj-info-card {
+        width: 100%;
+    }
+
+    .mj-add-to-cart-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mj-add-to-cart-section .mj-add-to-cart-btn {
+        width: 100%;
+    }
+
+    .mj-total-value {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 576px) {
+    .mj-breadcrumb-list {
+        font-size: 12px;
+    }
+
+    .mj-related-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mj-addon-item,
+    .mj-extra-item {
+        flex-wrap: wrap;
+    }
+}
+
+/* ==========================================================================
+   Legacy Single Food Item Styles (for backward compatibility)
+   ========================================================================== */
 
 .mj-single-food-item.layout-horizontal {
     display: flex;

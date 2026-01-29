@@ -75,8 +75,42 @@
 
             var $btn = $(e.currentTarget);
             var itemId = $btn.data('item-id');
-            var quantity = $btn.closest('.mj-food-item, .mj-single-food-item').find('.mj-quantity-input').val() || 1;
-            var options = this.getItemOptions($btn.closest('.mj-food-item, .mj-single-food-item'));
+            var $container = $btn.closest('.mj-food-item, .mj-single-food-item, .mj-single-food-details');
+            var quantity = $container.find('.mj-quantity-input').val() || 1;
+
+            // Collect addons
+            var addons = {};
+            $container.find('.mj-addon-input:checked').each(function() {
+                var addonId = $(this).data('addon-id');
+                if (addonId) {
+                    addons[addonId] = 1;
+                }
+            });
+
+            // Collect extras
+            var extras = {};
+            $container.find('.mj-extras-group').each(function() {
+                var groupId = $(this).data('group');
+                var $checked = $(this).find('.mj-extra-input:checked');
+                if ($checked.length) {
+                    var values = [];
+                    $checked.each(function() {
+                        values.push($(this).val());
+                    });
+                    // For single select (radio), just use the value
+                    if ($checked.first().attr('type') === 'radio') {
+                        extras[groupId] = values[0];
+                    } else {
+                        extras[groupId] = values;
+                    }
+                }
+            });
+
+            // Collect special instructions
+            var specialInstructions = $container.find('.mj-special-instructions').val() || '';
+
+            // Legacy options support
+            var options = this.getItemOptions($container);
 
             if ($btn.hasClass('loading')) {
                 return;
@@ -93,6 +127,9 @@
                     nonce: mitzies_jerk_params.nonce,
                     item_id: itemId,
                     quantity: quantity,
+                    addons: addons,
+                    extras: extras,
+                    special_instructions: specialInstructions,
                     options: options
                 },
                 success: function(response) {
@@ -771,6 +808,104 @@
             $(document).on('input', '.mj-quantity-input', function() {
                 this.value = this.value.replace(/[^0-9]/g, '');
             });
+
+            // Initialize dynamic total calculation for single product page
+            this.initDynamicTotal();
+        },
+
+        /**
+         * Initialize Dynamic Total Calculation
+         */
+        initDynamicTotal: function() {
+            var $container = $('.mj-single-food-item, .mj-single-food-details');
+            if (!$container.length) {
+                return;
+            }
+
+            var self = this;
+
+            // Bind to addon/extra checkboxes
+            $container.on('change', '.mj-addon-input, .mj-extra-input', function() {
+                self.updateDynamicTotal($container);
+            });
+
+            // Bind to quantity changes on single product page
+            $container.on('change', '.mj-quantity-input', function() {
+                self.updateDynamicTotal($container);
+            });
+
+            // Handle extras group max selection
+            $container.on('change', '.mj-extras-group input[type="checkbox"]', function() {
+                var $group = $(this).closest('.mj-extras-group');
+                var maxSelect = parseInt($group.data('max')) || 0;
+
+                if (maxSelect > 0) {
+                    var $checkboxes = $group.find('input[type="checkbox"]');
+                    var checked = $checkboxes.filter(':checked').length;
+
+                    if (checked >= maxSelect) {
+                        $checkboxes.not(':checked').prop('disabled', true);
+                    } else {
+                        $checkboxes.prop('disabled', false);
+                    }
+                }
+            });
+
+            // Initial calculation
+            this.updateDynamicTotal($container);
+        },
+
+        /**
+         * Update Dynamic Total
+         */
+        updateDynamicTotal: function($container) {
+            var $totalValue = $container.find('.mj-total-value');
+            if (!$totalValue.length) {
+                return;
+            }
+
+            var basePrice = parseFloat($totalValue.data('base-price')) || 0;
+            var quantity = parseInt($container.find('.mj-quantity-input').val()) || 1;
+            var addonsTotal = 0;
+
+            // Calculate addons total
+            $container.find('.mj-addon-input:checked, .mj-extra-input:checked').each(function() {
+                var addonPrice = parseFloat($(this).data('price')) || 0;
+                addonsTotal += addonPrice;
+            });
+
+            var total = (basePrice + addonsTotal) * quantity;
+
+            // Format the price
+            var formattedTotal = this.formatPrice(total);
+            $totalValue.text(formattedTotal);
+        },
+
+        /**
+         * Format Price
+         */
+        formatPrice: function(price) {
+            var currencySymbol = mitzies_jerk_params.currency_symbol || '$';
+            var currencyPosition = mitzies_jerk_params.currency_position || 'left';
+            var decimals = mitzies_jerk_params.decimals || 2;
+            var decimalSeparator = mitzies_jerk_params.decimal_separator || '.';
+            var thousandSeparator = mitzies_jerk_params.thousand_separator || ',';
+
+            // Format the number
+            var formattedPrice = price.toFixed(decimals);
+            var parts = formattedPrice.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandSeparator);
+            formattedPrice = parts.join(decimalSeparator);
+
+            if (currencyPosition === 'left') {
+                return currencySymbol + formattedPrice;
+            } else if (currencyPosition === 'left_space') {
+                return currencySymbol + ' ' + formattedPrice;
+            } else if (currencyPosition === 'right') {
+                return formattedPrice + currencySymbol;
+            } else {
+                return formattedPrice + ' ' + currencySymbol;
+            }
         },
 
         /**

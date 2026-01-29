@@ -78,12 +78,13 @@ class Mitzies_Jerk_Cart {
      * Add item to cart.
      *
      * @since    1.0.0
-     * @param    int   $food_item_id Food item ID.
-     * @param    int   $quantity     Quantity.
-     * @param    array $addons       Selected addons.
+     * @param    int   $food_item_id   Food item ID.
+     * @param    int   $quantity       Quantity.
+     * @param    array $addons         Selected addons.
+     * @param    array $cart_item_data Additional cart item data (extras, special instructions, etc).
      * @return   string|WP_Error Cart item key or error.
      */
-    public function add_to_cart( $food_item_id, $quantity = 1, $addons = array() ) {
+    public function add_to_cart( $food_item_id, $quantity = 1, $addons = array(), $cart_item_data = array() ) {
         // Validate food item.
         $food_item = get_post( $food_item_id );
 
@@ -108,8 +109,12 @@ class Mitzies_Jerk_Cart {
             return new WP_Error( 'not_available', __( 'This item is not available at this time.', 'mitzies-jerk' ) );
         }
 
-        // Generate cart item key.
-        $cart_item_key = $this->generate_cart_item_key( $food_item_id, $addons );
+        // Extract extras and special instructions from cart_item_data.
+        $extras = isset( $cart_item_data['extras'] ) ? $cart_item_data['extras'] : array();
+        $special_instructions = isset( $cart_item_data['special_instructions'] ) ? $cart_item_data['special_instructions'] : '';
+
+        // Generate cart item key (includes addons and extras for unique identification).
+        $cart_item_key = $this->generate_cart_item_key( $food_item_id, $addons, $extras, $special_instructions );
 
         // Get price.
         $price = (float) get_post_meta( $food_item_id, '_mj_price', true );
@@ -158,12 +163,47 @@ class Mitzies_Jerk_Cart {
 
             $this->cart_contents[ $cart_item_key ]['quantity'] = $new_quantity;
         } else {
+            // Calculate extras total.
+            $extras_total = 0;
+            $processed_extras = array();
+
+            if ( ! empty( $extras ) ) {
+                $available_extras = get_post_meta( $food_item_id, '_mj_extras', true );
+                if ( is_array( $available_extras ) ) {
+                    foreach ( $extras as $group_id => $selected_items ) {
+                        if ( isset( $available_extras[ $group_id ] ) ) {
+                            $group = $available_extras[ $group_id ];
+                            $group_name = isset( $group['name'] ) ? $group['name'] : __( 'Extras', 'mitzies-jerk' );
+                            $items = isset( $group['items'] ) ? $group['items'] : array();
+
+                            $selected_items = is_array( $selected_items ) ? $selected_items : array( $selected_items );
+
+                            foreach ( $selected_items as $item_idx ) {
+                                if ( isset( $items[ $item_idx ] ) ) {
+                                    $item = $items[ $item_idx ];
+                                    $item_price = isset( $item['price'] ) ? (float) $item['price'] : 0;
+                                    $extras_total += $item_price;
+                                    $processed_extras[] = array(
+                                        'group'    => $group_name,
+                                        'name'     => isset( $item['name'] ) ? $item['name'] : '',
+                                        'price'    => $item_price,
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             $this->cart_contents[ $cart_item_key ] = array(
-                'food_item_id' => $food_item_id,
-                'quantity'     => $quantity,
-                'price'        => $price,
-                'addons'       => $processed_addons,
-                'addon_total'  => $addon_total,
+                'food_item_id'         => $food_item_id,
+                'quantity'             => $quantity,
+                'price'                => $price,
+                'addons'               => $processed_addons,
+                'addon_total'          => $addon_total,
+                'extras'               => $processed_extras,
+                'extras_total'         => $extras_total,
+                'special_instructions' => $special_instructions,
             );
         }
 
@@ -632,9 +672,12 @@ class Mitzies_Jerk_Cart {
      * @param    array $addons       Selected addons.
      * @return   string
      */
-    private function generate_cart_item_key( $food_item_id, $addons ) {
+    private function generate_cart_item_key( $food_item_id, $addons, $extras = array(), $special_instructions = '' ) {
         ksort( $addons );
-        return md5( $food_item_id . wp_json_encode( $addons ) );
+        if ( is_array( $extras ) ) {
+            ksort( $extras );
+        }
+        return md5( $food_item_id . wp_json_encode( $addons ) . wp_json_encode( $extras ) . $special_instructions );
     }
 
     /**
@@ -687,23 +730,27 @@ class Mitzies_Jerk_Cart {
                 continue;
             }
 
-            $line_total = ( $item['price'] + $item['addon_total'] ) * $item['quantity'];
+            $extras_total = isset( $item['extras_total'] ) ? $item['extras_total'] : 0;
+            $line_total = ( $item['price'] + $item['addon_total'] + $extras_total ) * $item['quantity'];
 
             $items[] = array(
-                'key'               => $key,
-                'food_item_id'      => $item['food_item_id'],
-                'name'              => $food_item->post_title,
-                'quantity'          => $item['quantity'],
-                'price'             => $item['price'],
-                'price_formatted'   => mitzies_jerk_format_price( $item['price'] ),
-                'addons'            => $item['addons'],
-                'addon_total'       => $item['addon_total'],
-                'line_total'        => $line_total,
-                'subtotal'          => $line_total,
-                'subtotal_formatted' => mitzies_jerk_format_price( $line_total ),
-                'thumbnail'         => get_the_post_thumbnail_url( $item['food_item_id'], 'thumbnail' ),
-                'image'             => get_the_post_thumbnail_url( $item['food_item_id'], 'thumbnail' ),
-                'permalink'         => get_permalink( $item['food_item_id'] ),
+                'key'                  => $key,
+                'food_item_id'         => $item['food_item_id'],
+                'name'                 => $food_item->post_title,
+                'quantity'             => $item['quantity'],
+                'price'                => $item['price'],
+                'price_formatted'      => mitzies_jerk_format_price( $item['price'] ),
+                'addons'               => $item['addons'],
+                'addon_total'          => $item['addon_total'],
+                'extras'               => isset( $item['extras'] ) ? $item['extras'] : array(),
+                'extras_total'         => $extras_total,
+                'special_instructions' => isset( $item['special_instructions'] ) ? $item['special_instructions'] : '',
+                'line_total'           => $line_total,
+                'subtotal'             => $line_total,
+                'subtotal_formatted'   => mitzies_jerk_format_price( $line_total ),
+                'thumbnail'            => get_the_post_thumbnail_url( $item['food_item_id'], 'thumbnail' ),
+                'image'                => get_the_post_thumbnail_url( $item['food_item_id'], 'thumbnail' ),
+                'permalink'            => get_permalink( $item['food_item_id'] ),
             );
         }
 
