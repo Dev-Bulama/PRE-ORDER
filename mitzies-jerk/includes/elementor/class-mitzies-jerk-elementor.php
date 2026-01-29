@@ -38,9 +38,26 @@ class Mitzies_Jerk_Elementor {
      * Constructor
      */
     public function __construct() {
-        add_action( 'elementor/widgets/register', array( $this, 'register_widgets' ) );
-        add_action( 'elementor/elements/categories_registered', array( $this, 'register_category' ) );
+        // Register category early with high priority.
+        add_action( 'elementor/elements/categories_registered', array( $this, 'register_category' ), 5 );
+        // Register widgets after category is set up.
+        add_action( 'elementor/widgets/register', array( $this, 'register_widgets' ), 10 );
         add_action( 'elementor/frontend/after_enqueue_styles', array( $this, 'enqueue_styles' ) );
+        // Also try on init in case Elementor already loaded.
+        add_action( 'elementor/init', array( $this, 'on_elementor_init' ) );
+    }
+
+    /**
+     * On Elementor init - ensure category is registered.
+     */
+    public function on_elementor_init() {
+        // Register category if Elementor is already initialized.
+        if ( did_action( 'elementor/elements/categories_registered' ) ) {
+            $elements_manager = \Elementor\Plugin::instance()->elements_manager;
+            if ( $elements_manager ) {
+                $this->register_category( $elements_manager );
+            }
+        }
     }
 
     /**

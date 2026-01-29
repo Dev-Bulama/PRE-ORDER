@@ -115,6 +115,8 @@ class Mitzies_Jerk {
 
         // Payment gateways.
         require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-payment.php';
+        require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-cod.php';
+        require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-bank-transfer.php';
         require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-paystack.php';
         require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-flutterwave.php';
         require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-stripe.php';
@@ -328,10 +330,14 @@ class Mitzies_Jerk {
      * @since    1.0.0
      */
     public function init_elementor_integration() {
-        if ( ! class_exists( '\Elementor\Plugin' ) ) {
+        // Check if Elementor is installed and activated.
+        if ( ! did_action( 'elementor/loaded' ) ) {
+            // Try again on elementor/loaded hook.
+            add_action( 'elementor/loaded', array( $this, 'init_elementor_integration' ) );
             return;
         }
 
+        // Require the Elementor integration class.
         require_once MITZIES_JERK_PATH . 'includes/elementor/class-mitzies-jerk-elementor.php';
         Mitzies_Jerk_Elementor::get_instance();
     }

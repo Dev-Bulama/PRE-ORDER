@@ -40,10 +40,12 @@ class Mitzies_Jerk_Payment {
      */
     private function init_gateways() {
         $this->gateways = array(
-            'paystack'    => new Mitzies_Jerk_Gateway_Paystack(),
-            'flutterwave' => new Mitzies_Jerk_Gateway_Flutterwave(),
-            'stripe'      => new Mitzies_Jerk_Gateway_Stripe(),
-            'paypal'      => new Mitzies_Jerk_Gateway_PayPal(),
+            'cod'           => new Mitzies_Jerk_Gateway_COD(),
+            'bank_transfer' => new Mitzies_Jerk_Gateway_Bank_Transfer(),
+            'paystack'      => new Mitzies_Jerk_Gateway_Paystack(),
+            'flutterwave'   => new Mitzies_Jerk_Gateway_Flutterwave(),
+            'stripe'        => new Mitzies_Jerk_Gateway_Stripe(),
+            'paypal'        => new Mitzies_Jerk_Gateway_PayPal(),
         );
 
         /**

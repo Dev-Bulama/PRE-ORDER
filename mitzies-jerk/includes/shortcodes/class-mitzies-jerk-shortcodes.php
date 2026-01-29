@@ -272,8 +272,8 @@ class Mitzies_Jerk_Shortcodes {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ( $cart['items'] as $key => $item ) : ?>
-                                <tr class="mj-cart-item" data-key="<?php echo esc_attr( $key ); ?>">
+                            <?php foreach ( $cart['items'] as $item ) : ?>
+                                <tr class="mj-cart-item" data-item-key="<?php echo esc_attr( $item['key'] ); ?>">
                                     <td class="mj-col-product">
                                         <div class="mj-product-info">
                                             <?php if ( $item['image'] ) : ?>
