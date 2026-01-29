@@ -31,9 +31,9 @@
             // Add to cart
             $(document).on('click', '.mj-add-to-cart-btn', this.addToCart.bind(this));
 
-            // Update cart quantity
-            $(document).on('click', '.mj-quantity-btn', this.updateQuantity.bind(this));
-            $(document).on('change', '.mj-quantity-input', this.updateCartItem.bind(this));
+            // Update cart quantity (supports both single item and cart page controls)
+            $(document).on('click', '.mj-quantity-btn, .mj-qty-minus, .mj-qty-plus', this.updateQuantity.bind(this));
+            $(document).on('change', '.mj-quantity-input, .mj-qty-input', this.updateCartItem.bind(this));
 
             // Remove from cart
             $(document).on('click', '.mj-remove-item', this.removeFromCart.bind(this));
@@ -158,16 +158,20 @@
             e.preventDefault();
 
             var $btn = $(e.currentTarget);
-            var $input = $btn.siblings('.mj-quantity-input');
+            // Support both button groups for single item and cart page
+            var $input = $btn.siblings('.mj-quantity-input, .mj-qty-input');
+            if (!$input.length) {
+                $input = $btn.parent().find('.mj-quantity-input, .mj-qty-input');
+            }
             var currentVal = parseInt($input.val()) || 1;
             var min = parseInt($input.attr('min')) || 1;
             var max = parseInt($input.attr('max')) || 99;
 
-            if ($btn.hasClass('mj-quantity-minus')) {
+            if ($btn.hasClass('mj-quantity-minus') || $btn.hasClass('mj-qty-minus')) {
                 if (currentVal > min) {
                     $input.val(currentVal - 1).trigger('change');
                 }
-            } else if ($btn.hasClass('mj-quantity-plus')) {
+            } else if ($btn.hasClass('mj-quantity-plus') || $btn.hasClass('mj-qty-plus')) {
                 if (currentVal < max) {
                     $input.val(currentVal + 1).trigger('change');
                 }
@@ -179,7 +183,13 @@
          */
         updateCartItem: function(e) {
             var $input = $(e.currentTarget);
-            var $row = $input.closest('tr');
+            var $row = $input.closest('tr.mj-cart-item');
+
+            // Skip if not on cart page table
+            if (!$row.length) {
+                return;
+            }
+
             var itemKey = $row.data('item-key');
             var quantity = parseInt($input.val()) || 1;
 

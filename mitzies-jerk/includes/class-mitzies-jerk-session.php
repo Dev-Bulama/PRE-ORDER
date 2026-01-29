@@ -226,6 +226,11 @@ class Mitzies_Jerk_Session {
     public function set( $key, $value ) {
         $this->data[ $key ] = $value;
         $this->dirty = true;
+
+        // Save immediately for AJAX requests to ensure data persists.
+        if ( wp_doing_ajax() ) {
+            $this->save_data();
+        }
     }
 
     /**

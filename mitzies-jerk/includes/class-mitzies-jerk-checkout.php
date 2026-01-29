@@ -422,6 +422,16 @@ class Mitzies_Jerk_Checkout {
         $gateways = array();
 
         $all_gateways = array(
+            'cod'         => array(
+                'title'       => __( 'Cash on Delivery', 'mitzies-jerk' ),
+                'description' => __( 'Pay when your order arrives', 'mitzies-jerk' ),
+                'icon'        => '',
+            ),
+            'bank_transfer' => array(
+                'title'       => __( 'Bank Transfer', 'mitzies-jerk' ),
+                'description' => __( 'Pay via direct bank transfer', 'mitzies-jerk' ),
+                'icon'        => '',
+            ),
             'paystack'    => array(
                 'title'       => __( 'Paystack', 'mitzies-jerk' ),
                 'description' => __( 'Pay with Paystack - Cards, Bank Transfer, USSD', 'mitzies-jerk' ),
@@ -443,6 +453,11 @@ class Mitzies_Jerk_Checkout {
                 'icon'        => MITZIES_JERK_URL . 'assets/images/paypal.png',
             ),
         );
+
+        // If no gateways are enabled, default to COD and Bank Transfer.
+        if ( empty( $enabled ) ) {
+            $enabled = array( 'cod', 'bank_transfer' );
+        }
 
         foreach ( $enabled as $gateway_id ) {
             if ( isset( $all_gateways[ $gateway_id ] ) ) {
