@@ -326,8 +326,15 @@ class Mitzies_Jerk {
      * @access   private
      */
     private function define_elementor_hooks() {
-        // Only load if Elementor is active.
-        $this->loader->add_action( 'plugins_loaded', $this, 'init_elementor_integration' );
+        // Check immediately if Elementor is already loaded.
+        if ( did_action( 'elementor/loaded' ) ) {
+            $this->init_elementor_integration();
+        } else {
+            // Use init hook as fallback since plugins_loaded may have already fired.
+            $this->loader->add_action( 'init', $this, 'init_elementor_integration', 5 );
+            // Also hook directly to elementor/loaded in case it loads later.
+            add_action( 'elementor/loaded', array( $this, 'init_elementor_integration' ) );
+        }
     }
 
     /**
@@ -336,12 +343,18 @@ class Mitzies_Jerk {
      * @since    1.0.0
      */
     public function init_elementor_integration() {
-        // Check if Elementor is installed and activated.
-        if ( ! did_action( 'elementor/loaded' ) ) {
-            // Try again on elementor/loaded hook.
-            add_action( 'elementor/loaded', array( $this, 'init_elementor_integration' ) );
+        // Prevent multiple initializations.
+        static $initialized = false;
+        if ( $initialized ) {
             return;
         }
+
+        // Check if Elementor is installed and activated.
+        if ( ! did_action( 'elementor/loaded' ) ) {
+            return;
+        }
+
+        $initialized = true;
 
         // Require the Elementor integration class.
         require_once MITZIES_JERK_PATH . 'includes/elementor/class-mitzies-jerk-elementor.php';

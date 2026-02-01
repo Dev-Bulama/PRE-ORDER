@@ -48,7 +48,7 @@ class Mitzies_Jerk_Widget_Checkout extends \Elementor\Widget_Base {
      * @return array
      */
     public function get_categories() {
-        return array( 'mitzies-jerk' );
+        return array( 'mitzies-jerk', 'general' );
     }
 
     /**
