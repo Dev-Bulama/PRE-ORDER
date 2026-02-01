@@ -223,6 +223,16 @@ class Mitzies_Jerk_Admin {
             'mj-documentation',
             array( $this, 'render_documentation_page' )
         );
+
+        // Diagnostic submenu.
+        add_submenu_page(
+            'mitzies-jerk',
+            __( 'Diagnostics', 'mitzies-jerk' ),
+            __( 'Diagnostics', 'mitzies-jerk' ),
+            'manage_options',
+            'mj-diagnostics',
+            array( $this, 'render_diagnostic_page' )
+        );
     }
 
     /**
@@ -237,6 +247,13 @@ class Mitzies_Jerk_Admin {
      */
     public function render_documentation_page() {
         include MITZIES_JERK_PATH . 'admin/partials/documentation.php';
+    }
+
+    /**
+     * Render diagnostic page.
+     */
+    public function render_diagnostic_page() {
+        include MITZIES_JERK_PATH . 'admin/partials/diagnostic.php';
     }
 
     /**
