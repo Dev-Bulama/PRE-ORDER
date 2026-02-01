@@ -195,6 +195,8 @@ class Mitzies_Jerk_Shortcodes {
         $stock_status = get_post_meta( $post_id, '_mj_stock_status', true );
         $is_featured = get_post_meta( $post_id, '_mj_is_featured', true );
         $rating = Mitzies_Jerk_Database::get_average_rating( $post_id );
+        $addons = Mitzies_Jerk_Database::get_food_addons( $post_id );
+        $display_price = $sale_price ? $sale_price : $price;
         ?>
         <div class="mj-food-item<?php echo $is_featured ? ' featured' : ''; ?><?php echo 'outofstock' === $stock_status ? ' out-of-stock' : ''; ?>">
             <div class="mj-food-image">
@@ -236,9 +238,25 @@ class Mitzies_Jerk_Shortcodes {
                         <?php echo esc_html( mitzies_jerk_format_price( $price ) ); ?>
                     <?php endif; ?>
                 </div>
+                <?php if ( ! empty( $addons ) ) : ?>
+                    <div class="mj-food-addons">
+                        <span class="mj-addons-label"><?php esc_html_e( 'Available Add-ons:', 'mitzies-jerk' ); ?></span>
+                        <div class="mj-addons-list">
+                            <?php foreach ( $addons as $addon ) : ?>
+                                <label class="mj-addon-option">
+                                    <input type="checkbox" class="mj-addon-input"
+                                           data-addon-id="<?php echo esc_attr( $addon->id ); ?>"
+                                           data-price="<?php echo esc_attr( $addon->addon_price ); ?>">
+                                    <span class="mj-addon-name"><?php echo esc_html( $addon->addon_name ); ?></span>
+                                    <span class="mj-addon-price">(+<?php echo esc_html( mitzies_jerk_format_price( $addon->addon_price ) ); ?>)</span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <div class="mj-food-actions">
                     <?php if ( 'outofstock' !== $stock_status ) : ?>
-                        <button class="mj-add-to-cart-btn" data-item-id="<?php echo esc_attr( $post_id ); ?>">
+                        <button class="mj-add-to-cart-btn" data-item-id="<?php echo esc_attr( $post_id ); ?>" data-base-price="<?php echo esc_attr( $display_price ); ?>">
                             <span class="dashicons dashicons-cart"></span>
                             <?php esc_html_e( 'Add to Cart', 'mitzies-jerk' ); ?>
                         </button>
@@ -538,16 +556,30 @@ class Mitzies_Jerk_Shortcodes {
                             <?php if ( ! empty( $gateways ) ) : ?>
                                 <div class="mj-payment-methods">
                                     <?php $first = true; foreach ( $gateways as $gateway_id => $gateway ) : ?>
-                                        <label class="mj-payment-method<?php echo $first ? ' selected' : ''; ?>">
-                                            <input type="radio" name="payment_method" value="<?php echo esc_attr( $gateway_id ); ?>" <?php checked( $first ); ?>>
-                                            <span class="mj-pm-info">
-                                                <?php if ( ! empty( $gateway['icon'] ) ) : ?>
-                                                    <img src="<?php echo esc_url( $gateway['icon'] ); ?>" alt="<?php echo esc_attr( $gateway['title'] ); ?>">
-                                                <?php endif; ?>
-                                                <span class="mj-pm-title"><?php echo esc_html( $gateway['title'] ); ?></span>
-                                                <span class="mj-pm-desc"><?php echo esc_html( $gateway['description'] ); ?></span>
-                                            </span>
-                                        </label>
+                                        <div class="mj-payment-method-wrapper">
+                                            <label class="mj-payment-method<?php echo $first ? ' selected' : ''; ?>" data-gateway="<?php echo esc_attr( $gateway_id ); ?>">
+                                                <input type="radio" name="payment_method" value="<?php echo esc_attr( $gateway_id ); ?>" <?php checked( $first ); ?>>
+                                                <span class="mj-pm-info">
+                                                    <?php if ( ! empty( $gateway['icon'] ) ) : ?>
+                                                        <img src="<?php echo esc_url( $gateway['icon'] ); ?>" alt="<?php echo esc_attr( $gateway['title'] ?? '' ); ?>">
+                                                    <?php elseif ( ! empty( $gateway['icon_class'] ) ) : ?>
+                                                        <span class="dashicons <?php echo esc_attr( $gateway['icon_class'] ); ?> mj-pm-icon"></span>
+                                                    <?php else : ?>
+                                                        <span class="dashicons dashicons-money-alt mj-pm-icon"></span>
+                                                    <?php endif; ?>
+                                                    <span class="mj-pm-title"><?php echo esc_html( $gateway['title'] ?? __( 'Payment Method', 'mitzies-jerk' ) ); ?></span>
+                                                    <span class="mj-pm-desc"><?php echo esc_html( $gateway['description'] ?? '' ); ?></span>
+                                                </span>
+                                            </label>
+                                            <?php if ( ! empty( $gateway['extra_info'] ) ) : ?>
+                                                <div class="mj-payment-extra-info" data-gateway="<?php echo esc_attr( $gateway_id ); ?>" style="<?php echo $first ? '' : 'display:none;'; ?>">
+                                                    <div class="mj-bank-details">
+                                                        <strong><?php esc_html_e( 'Bank Account Details:', 'mitzies-jerk' ); ?></strong>
+                                                        <div class="mj-bank-details-content"><?php echo wp_kses_post( $gateway['extra_info'] ); ?></div>
+                                                    </div>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
                                     <?php $first = false; endforeach; ?>
                                 </div>
                             <?php else : ?>

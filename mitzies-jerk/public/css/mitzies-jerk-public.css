@@ -451,6 +451,84 @@
     filter: grayscale(50%);
 }
 
+/* Food Item Addons */
+.mj-food-addons {
+    margin: 12px 0;
+    padding: 10px;
+    background: var(--mj-gray-100);
+    border-radius: var(--mj-border-radius-sm);
+}
+
+.mj-addons-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mj-gray-700);
+    margin-bottom: 8px;
+}
+
+.mj-food-addons .mj-addons-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mj-addon-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.mj-addon-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.mj-addon-option .mj-addon-name {
+    flex: 1;
+    color: var(--mj-gray-800);
+}
+
+.mj-addon-option .mj-addon-price {
+    color: var(--mj-primary);
+    font-weight: 500;
+    font-size: 12px;
+}
+
+/* Payment Method Styles */
+.mj-pm-icon {
+    font-size: 24px;
+    color: var(--mj-primary);
+    margin-right: 8px;
+}
+
+.mj-payment-extra-info {
+    margin-top: 10px;
+    padding: 15px;
+    background: var(--mj-gray-100);
+    border-radius: var(--mj-border-radius);
+    border-left: 3px solid var(--mj-primary);
+}
+
+.mj-bank-details {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.mj-bank-details strong {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--mj-gray-800);
+}
+
+.mj-bank-details-content {
+    color: var(--mj-gray-700);
+}
+
 .mj-food-content {
     padding: 20px;
 }

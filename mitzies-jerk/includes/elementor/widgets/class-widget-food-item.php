@@ -48,7 +48,7 @@ class Mitzies_Jerk_Widget_Food_Item extends \Elementor\Widget_Base {
      * @return array
      */
     public function get_categories() {
-        return array( 'mitzies-jerk' );
+        return array( 'mitzies-jerk', 'general' );
     }
 
     /**
