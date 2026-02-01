@@ -1,6 +1,8 @@
 /**
  * Mitzies Jerk - Public JavaScript
  *
+ * Uber Eats-inspired food ordering experience
+ *
  * @package    Mitzies_Jerk
  * @subpackage Mitzies_Jerk/public/js
  */
@@ -13,15 +15,55 @@
      */
     var MitziesJerk = {
 
+        // Local cart state for persistence
+        cartState: {},
+
         /**
          * Initialize
          */
         init: function() {
+            this.loadCartState();
             this.bindEvents();
             this.initMiniCart();
             this.initPreorderDateTime();
             this.initPaymentMethods();
             this.initQuantityControls();
+            this.updateAllButtonStates();
+        },
+
+        /**
+         * Load cart state from localStorage as backup
+         */
+        loadCartState: function() {
+            try {
+                var stored = localStorage.getItem('mj_cart_state');
+                if (stored) {
+                    this.cartState = JSON.parse(stored);
+                }
+            } catch (e) {
+                this.cartState = {};
+            }
+        },
+
+        /**
+         * Save cart state to localStorage
+         */
+        saveCartState: function(cart) {
+            try {
+                if (cart && cart.items) {
+                    this.cartState = {};
+                    cart.items.forEach(function(item) {
+                        MitziesJerk.cartState[item.food_item_id] = {
+                            key: item.key,
+                            quantity: item.quantity,
+                            name: item.name
+                        };
+                    });
+                    localStorage.setItem('mj_cart_state', JSON.stringify(this.cartState));
+                }
+            } catch (e) {
+                console.log('Could not save cart state');
+            }
         },
 
         /**
@@ -30,6 +72,9 @@
         bindEvents: function() {
             // Add to cart
             $(document).on('click', '.mj-add-to-cart-btn', this.addToCart.bind(this));
+
+            // Uber Eats style quantity controls on grid items
+            $(document).on('click', '.mj-cart-qty-btn', this.handleCartQtyButton.bind(this));
 
             // Update cart quantity (supports both single item and cart page controls)
             $(document).on('click', '.mj-quantity-btn, .mj-qty-minus, .mj-qty-plus', this.updateQuantity.bind(this));
@@ -68,15 +113,185 @@
         },
 
         /**
+         * Update all add to cart button states based on cart
+         */
+        updateAllButtonStates: function() {
+            var self = this;
+
+            // Update buttons based on local cart state
+            Object.keys(this.cartState).forEach(function(itemId) {
+                var itemData = self.cartState[itemId];
+                if (itemData && itemData.quantity > 0) {
+                    self.switchToQuantityControls(itemId, itemData.quantity, itemData.key);
+                }
+            });
+        },
+
+        /**
+         * Switch Add to Cart button to quantity controls (Uber Eats style)
+         */
+        switchToQuantityControls: function(itemId, quantity, cartKey) {
+            var $btn = $('.mj-add-to-cart-btn[data-item-id="' + itemId + '"]');
+
+            if (!$btn.length) return;
+
+            // Check if already converted
+            if ($btn.hasClass('mj-has-qty-controls')) {
+                // Just update the quantity
+                $btn.find('.mj-cart-qty-value').text(quantity);
+                return;
+            }
+
+            // Convert button to quantity control
+            var qtyHtml = '<div class="mj-cart-qty-controls" data-item-id="' + itemId + '" data-cart-key="' + cartKey + '">' +
+                '<button type="button" class="mj-cart-qty-btn mj-cart-qty-minus" data-action="minus">-</button>' +
+                '<span class="mj-cart-qty-value">' + quantity + '</span>' +
+                '<button type="button" class="mj-cart-qty-btn mj-cart-qty-plus" data-action="plus">+</button>' +
+                '</div>';
+
+            $btn.addClass('mj-has-qty-controls').html(qtyHtml);
+        },
+
+        /**
+         * Switch back to Add to Cart button
+         */
+        switchToAddButton: function(itemId) {
+            var $btn = $('.mj-add-to-cart-btn[data-item-id="' + itemId + '"]');
+
+            if (!$btn.length) return;
+
+            $btn.removeClass('mj-has-qty-controls loading added').prop('disabled', false);
+            $btn.html('<span class="dashicons dashicons-cart"></span> ' + mitzies_jerk_params.i18n.add_to_cart);
+        },
+
+        /**
+         * Handle Uber Eats style quantity buttons
+         */
+        handleCartQtyButton: function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            var $btn = $(e.currentTarget);
+            var $controls = $btn.closest('.mj-cart-qty-controls');
+            var itemId = $controls.data('item-id');
+            var cartKey = $controls.data('cart-key');
+            var action = $btn.data('action');
+            var $qtyDisplay = $controls.find('.mj-cart-qty-value');
+            var currentQty = parseInt($qtyDisplay.text()) || 1;
+
+            if (action === 'plus') {
+                this.updateCartQuantity(cartKey, currentQty + 1, itemId, $qtyDisplay);
+            } else if (action === 'minus') {
+                if (currentQty <= 1) {
+                    this.removeItemByKey(cartKey, itemId);
+                } else {
+                    this.updateCartQuantity(cartKey, currentQty - 1, itemId, $qtyDisplay);
+                }
+            }
+        },
+
+        /**
+         * Update cart quantity via AJAX
+         */
+        updateCartQuantity: function(cartKey, quantity, itemId, $qtyDisplay) {
+            var self = this;
+
+            // Optimistic UI update
+            $qtyDisplay.text(quantity);
+
+            $.ajax({
+                url: mitzies_jerk_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'mj_update_cart',
+                    nonce: mitzies_jerk_params.nonce,
+                    item_key: cartKey,
+                    quantity: quantity
+                },
+                success: function(response) {
+                    if (response.success) {
+                        self.updateMiniCart(response.data.cart);
+                        self.saveCartState(response.data.cart);
+
+                        // Update cart page if present
+                        if ($('.mj-cart').length) {
+                            self.updateCartTable(response.data.cart);
+                        }
+                    } else {
+                        // Revert on failure
+                        self.initMiniCart();
+                        MitziesJerk.showNotice('error', response.data.message || mitzies_jerk_params.i18n.error);
+                    }
+                },
+                error: function() {
+                    self.initMiniCart();
+                    MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.error);
+                }
+            });
+        },
+
+        /**
+         * Remove item by cart key
+         */
+        removeItemByKey: function(cartKey, itemId) {
+            var self = this;
+
+            $.ajax({
+                url: mitzies_jerk_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'mj_remove_from_cart',
+                    nonce: mitzies_jerk_params.nonce,
+                    item_key: cartKey
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Switch back to add button
+                        self.switchToAddButton(itemId);
+
+                        // Remove from local state
+                        delete self.cartState[itemId];
+                        localStorage.setItem('mj_cart_state', JSON.stringify(self.cartState));
+
+                        self.updateMiniCart(response.data.cart);
+                        self.saveCartState(response.data.cart);
+
+                        // Update cart page if present
+                        if ($('.mj-cart').length) {
+                            $('tr[data-item-key="' + cartKey + '"]').fadeOut(300, function() {
+                                $(this).remove();
+                                if (response.data.cart.items.length === 0) {
+                                    MitziesJerk.showEmptyCart();
+                                }
+                            });
+                            self.updateCartTable(response.data.cart);
+                        }
+
+                        MitziesJerk.showNotice('success', response.data.message);
+                    }
+                },
+                error: function() {
+                    MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.error);
+                }
+            });
+        },
+
+        /**
          * Add to Cart
          */
         addToCart: function(e) {
             e.preventDefault();
 
             var $btn = $(e.currentTarget);
+
+            // If already has quantity controls, don't proceed
+            if ($btn.hasClass('mj-has-qty-controls')) {
+                return;
+            }
+
             var itemId = $btn.data('item-id');
             var $container = $btn.closest('.mj-food-item, .mj-single-food-item, .mj-single-food-details');
-            var quantity = $container.find('.mj-quantity-input').val() || 1;
+            var quantity = parseInt($container.find('.mj-quantity-input').val()) || 1;
 
             // Collect addons
             var addons = {};
@@ -119,6 +334,8 @@
             $btn.addClass('loading').prop('disabled', true);
             $btn.html('<span class="mj-spinner"></span>');
 
+            var self = this;
+
             $.ajax({
                 url: mitzies_jerk_params.ajax_url,
                 type: 'POST',
@@ -134,15 +351,30 @@
                 },
                 success: function(response) {
                     if (response.success) {
-                        $btn.removeClass('loading').addClass('added');
-                        $btn.html('<span class="dashicons dashicons-yes"></span> ' + mitzies_jerk_params.i18n.added);
+                        // Find the cart item key from response
+                        var cartKey = '';
+                        if (response.data.cart && response.data.cart.items) {
+                            response.data.cart.items.forEach(function(item) {
+                                if (item.food_item_id == itemId) {
+                                    cartKey = item.key;
+                                    quantity = item.quantity;
+                                }
+                            });
+                        }
 
-                        MitziesJerk.updateMiniCart(response.data.cart);
+                        // Switch to quantity controls (Uber Eats style)
+                        $btn.removeClass('loading').prop('disabled', false);
+                        self.switchToQuantityControls(itemId, quantity, cartKey);
+
+                        // Update cart state
+                        self.updateMiniCart(response.data.cart);
+                        self.saveCartState(response.data.cart);
                         MitziesJerk.showNotice('success', response.data.message);
 
+                        // Open mini cart briefly to show item added
+                        $('.mj-mini-cart-dropdown').addClass('active');
                         setTimeout(function() {
-                            $btn.removeClass('added').prop('disabled', false);
-                            $btn.html('<span class="dashicons dashicons-cart"></span> ' + mitzies_jerk_params.i18n.add_to_cart);
+                            $('.mj-mini-cart-dropdown').removeClass('active');
                         }, 2000);
                     } else {
                         $btn.removeClass('loading').prop('disabled', false);
@@ -189,7 +421,7 @@
         },
 
         /**
-         * Update Quantity (+ / - buttons)
+         * Update Quantity (+ / - buttons) on single product page
          */
         updateQuantity: function(e) {
             e.preventDefault();
@@ -216,7 +448,7 @@
         },
 
         /**
-         * Update Cart Item
+         * Update Cart Item (for cart page)
          */
         updateCartItem: function(e) {
             var $input = $(e.currentTarget);
@@ -250,6 +482,7 @@
                         $row.removeClass('loading');
                         MitziesJerk.updateCartTable(response.data.cart);
                         MitziesJerk.updateMiniCart(response.data.cart);
+                        MitziesJerk.saveCartState(response.data.cart);
                     } else {
                         $row.removeClass('loading');
                         MitziesJerk.showNotice('error', response.data.message);
@@ -271,12 +504,14 @@
             var $btn = $(e.currentTarget);
             var $row = $btn.closest('tr');
             var itemKey = $row.data('item-key');
+            var itemId = $row.data('item-id');
 
             if (!confirm(mitzies_jerk_params.i18n.confirm_remove)) {
                 return;
             }
 
             $row.addClass('loading');
+            var self = this;
 
             $.ajax({
                 url: mitzies_jerk_params.ajax_url,
@@ -292,11 +527,20 @@
                             $(this).remove();
                             MitziesJerk.updateCartTable(response.data.cart);
                             MitziesJerk.updateMiniCart(response.data.cart);
+                            MitziesJerk.saveCartState(response.data.cart);
 
                             if (response.data.cart.items.length === 0) {
                                 MitziesJerk.showEmptyCart();
                             }
                         });
+
+                        // Update button state if on menu
+                        if (itemId) {
+                            self.switchToAddButton(itemId);
+                            delete self.cartState[itemId];
+                            localStorage.setItem('mj_cart_state', JSON.stringify(self.cartState));
+                        }
+
                         MitziesJerk.showNotice('success', response.data.message);
                     } else {
                         $row.removeClass('loading');
@@ -368,6 +612,8 @@
 
             $container.find('.mj-food-grid').addClass('loading');
 
+            var self = this;
+
             $.ajax({
                 url: mitzies_jerk_params.ajax_url,
                 type: 'POST',
@@ -379,6 +625,8 @@
                 success: function(response) {
                     if (response.success) {
                         $container.find('.mj-food-grid').html(response.data.html).removeClass('loading');
+                        // Update button states after loading new items
+                        self.updateAllButtonStates();
                     } else {
                         $container.find('.mj-food-grid').removeClass('loading');
                         MitziesJerk.showNotice('error', response.data.message);
@@ -404,6 +652,8 @@
 
             $btn.addClass('loading').prop('disabled', true);
 
+            var self = this;
+
             $.ajax({
                 url: mitzies_jerk_params.ajax_url,
                 type: 'POST',
@@ -421,6 +671,9 @@
                         if (!response.data.has_more) {
                             $btn.hide();
                         }
+
+                        // Update button states after loading new items
+                        self.updateAllButtonStates();
                     } else {
                         $btn.removeClass('loading').prop('disabled', false);
                     }
@@ -451,12 +704,18 @@
             var formData = $form.serialize();
             formData += '&action=mj_process_checkout&nonce=' + mitzies_jerk_params.nonce;
 
+            var self = this;
+
             $.ajax({
                 url: mitzies_jerk_params.ajax_url,
                 type: 'POST',
                 data: formData,
                 success: function(response) {
                     if (response.success) {
+                        // Clear local cart state on successful checkout
+                        self.cartState = {};
+                        localStorage.removeItem('mj_cart_state');
+
                         if (response.data.redirect_url) {
                             window.location.href = response.data.redirect_url;
                         } else if (response.data.payment_url) {
@@ -612,6 +871,8 @@
          * Initialize Mini Cart
          */
         initMiniCart: function() {
+            var self = this;
+
             // Get cart on page load
             $.ajax({
                 url: mitzies_jerk_params.ajax_url,
@@ -623,6 +884,8 @@
                 success: function(response) {
                     if (response.success) {
                         MitziesJerk.updateMiniCart(response.data.cart);
+                        MitziesJerk.saveCartState(response.data.cart);
+                        self.updateAllButtonStates();
                     }
                 }
             });
@@ -648,14 +911,24 @@
                 return;
             }
 
-            // Update count
-            $miniCart.find('.mj-mini-cart-count').text(cart.item_count);
+            // Update count with animation
+            var $count = $miniCart.find('.mj-mini-cart-count');
+            var oldCount = parseInt($count.text()) || 0;
+            var newCount = cart.item_count || 0;
+
+            if (oldCount !== newCount) {
+                $count.addClass('mj-count-updated');
+                setTimeout(function() {
+                    $count.removeClass('mj-count-updated');
+                }, 300);
+            }
+            $count.text(newCount);
 
             // Update items
             var itemsHtml = '';
             if (cart.items && cart.items.length > 0) {
                 cart.items.forEach(function(item) {
-                    itemsHtml += '<div class="mj-mini-cart-item">';
+                    itemsHtml += '<div class="mj-mini-cart-item" data-key="' + item.key + '">';
                     if (item.thumbnail) {
                         itemsHtml += '<img src="' + item.thumbnail + '" alt="' + item.name + '" />';
                     }
@@ -674,6 +947,13 @@
 
             // Update total
             $miniCart.find('.mj-mini-cart-total').text(cart.total_formatted);
+
+            // Show/hide checkout button
+            if (cart.items && cart.items.length > 0) {
+                $miniCart.find('.mj-mini-cart-actions').show();
+            } else {
+                $miniCart.find('.mj-mini-cart-actions').hide();
+            }
         },
 
         /**
@@ -684,6 +964,7 @@
             cart.items.forEach(function(item) {
                 var $row = $('tr[data-item-key="' + item.key + '"]');
                 $row.find('.mj-cart-item-subtotal').text(item.subtotal_formatted);
+                $row.find('.mj-qty-input').val(item.quantity);
             });
 
             this.updateCartTotals(cart);
@@ -700,6 +981,16 @@
                 $('.mj-cart-discount-value').text('-' + cart.discount_formatted);
             } else {
                 $('.mj-cart-discount-row').hide();
+            }
+
+            if (cart.delivery_fee > 0) {
+                $('.mj-cart-delivery-row').show();
+                $('.mj-cart-delivery-value').text(cart.delivery_fee_formatted);
+            }
+
+            if (cart.tax > 0) {
+                $('.mj-cart-tax-row').show();
+                $('.mj-cart-tax-value').text(cart.tax_formatted);
             }
 
             $('.mj-cart-total-value').text(cart.total_formatted);

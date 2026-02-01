@@ -3106,3 +3106,188 @@
         height: 50px;
     }
 }
+
+/* ==========================================================================
+   Uber Eats-Style Quantity Controls (Menu Grid)
+   ========================================================================== */
+
+.mj-cart-qty-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: var(--mj-primary);
+    border-radius: var(--mj-border-radius);
+    overflow: hidden;
+    height: 44px;
+}
+
+.mj-cart-qty-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: none;
+    color: var(--mj-white);
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--mj-transition);
+    padding: 0;
+    line-height: 1;
+}
+
+.mj-cart-qty-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.mj-cart-qty-btn:active {
+    transform: scale(0.95);
+}
+
+.mj-cart-qty-btn.minus:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.mj-qty-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--mj-white);
+}
+
+/* Loading state for quantity controls */
+.mj-cart-qty-controls.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.mj-cart-qty-controls.loading .mj-qty-display {
+    position: relative;
+}
+
+.mj-cart-qty-controls.loading .mj-qty-display::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--mj-white);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: mj-spin 0.6s linear infinite;
+}
+
+/* Animation for button swap */
+.mj-food-actions .mj-add-to-cart-btn,
+.mj-food-actions .mj-cart-qty-controls {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mj-food-actions .mj-add-to-cart-btn.hidden,
+.mj-food-actions .mj-cart-qty-controls.hidden {
+    display: none !important;
+}
+
+/* Success state animation */
+@keyframes mj-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.mj-cart-qty-controls.just-added {
+    animation: mj-pop 0.3s ease;
+}
+
+/* Ensure add to cart buttons flex properly */
+.mj-food-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.mj-food-actions .mj-add-to-cart-btn {
+    flex: 1;
+}
+
+.mj-food-actions .mj-cart-qty-controls {
+    flex: 1;
+}
+
+/* ==========================================================================
+   Floating Cart Indicator
+   ========================================================================== */
+
+.mj-floating-cart {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9998;
+    display: none;
+}
+
+.mj-floating-cart.visible {
+    display: block;
+}
+
+.mj-floating-cart-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: var(--mj-primary);
+    color: var(--mj-white);
+    border: none;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(231, 76, 60, 0.4);
+    transition: var(--mj-transition);
+    text-decoration: none;
+}
+
+.mj-floating-cart-btn:hover {
+    background: var(--mj-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(231, 76, 60, 0.5);
+}
+
+.mj-floating-cart-btn .mj-cart-icon {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.mj-floating-cart-btn .mj-cart-count {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    min-width: 18px;
+    height: 18px;
+    background: var(--mj-white);
+    color: var(--mj-primary);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 576px) {
+    .mj-floating-cart {
+        bottom: 15px;
+        right: 15px;
+        left: 15px;
+    }
+
+    .mj-floating-cart-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
