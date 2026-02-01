@@ -93,4 +93,41 @@ class Mitzies_Jerk_Gateway_COD extends Mitzies_Jerk_Payment_Gateway {
     public function verify_payment( $reference ) {
         return array( 'result' => 'success' );
     }
+
+    /**
+     * Get settings fields for admin configuration.
+     *
+     * @return array
+     */
+    public function get_settings_fields() {
+        return array(
+            'instructions' => array(
+                'title'       => __( 'Instructions', 'mitzies-jerk' ),
+                'type'        => 'textarea',
+                'description' => __( 'Instructions displayed to customer after checkout for Cash on Delivery.', 'mitzies-jerk' ),
+                'default'     => __( 'Please have the exact amount ready when your order arrives. Our delivery person will collect payment upon delivery.', 'mitzies-jerk' ),
+            ),
+            'enable_for_orders_above' => array(
+                'title'       => __( 'Minimum Order Amount', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'Minimum order amount required for Cash on Delivery (leave empty for no minimum).', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+            'max_order_amount' => array(
+                'title'       => __( 'Maximum Order Amount', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'Maximum order amount allowed for Cash on Delivery (leave empty for no maximum).', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+        );
+    }
+
+    /**
+     * Get the customer-facing instructions.
+     *
+     * @return string
+     */
+    public function get_instructions() {
+        return $this->get_option( 'instructions', __( 'Please have the exact amount ready when your order arrives.', 'mitzies-jerk' ) );
+    }
 }

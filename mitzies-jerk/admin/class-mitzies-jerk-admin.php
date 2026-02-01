@@ -617,6 +617,9 @@ class Mitzies_Jerk_Admin {
             } else {
                 delete_post_meta( $post_id, '_mj_gallery' );
             }
+
+            // Save addons.
+            $this->save_food_addons( $post_id );
         }
 
         // Order meta.
@@ -625,6 +628,82 @@ class Mitzies_Jerk_Admin {
                 $new_status = sanitize_text_field( $_POST['mj_order_status'] );
                 $order = new Mitzies_Jerk_Order();
                 $order->update_status( $post_id, $new_status );
+            }
+        }
+    }
+
+    /**
+     * Save food addons.
+     *
+     * @param int $post_id Post ID.
+     */
+    private function save_food_addons( $post_id ) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX . 'addons';
+
+        // Get submitted addons.
+        $submitted_addons = isset( $_POST['mj_addons'] ) ? $_POST['mj_addons'] : array();
+
+        // Get existing addon IDs.
+        $existing_addons = Mitzies_Jerk_Database::get_food_addons( $post_id );
+        $existing_ids = array();
+        foreach ( $existing_addons as $addon ) {
+            $existing_ids[] = $addon->id;
+        }
+
+        $processed_ids = array();
+
+        // Process submitted addons.
+        foreach ( $submitted_addons as $addon_key => $addon_data ) {
+            $addon_name = isset( $addon_data['name'] ) ? sanitize_text_field( $addon_data['name'] ) : '';
+            $addon_price = isset( $addon_data['price'] ) ? floatval( $addon_data['price'] ) : 0;
+
+            // Skip empty addons.
+            if ( empty( $addon_name ) ) {
+                continue;
+            }
+
+            // Check if this is a new addon (key starts with 'new_').
+            if ( strpos( $addon_key, 'new_' ) === 0 ) {
+                // Insert new addon.
+                $wpdb->insert(
+                    $table_name,
+                    array(
+                        'food_item_id' => $post_id,
+                        'addon_name'   => $addon_name,
+                        'addon_price'  => $addon_price,
+                        'status'       => 'active',
+                        'sort_order'   => 0,
+                        'created_at'   => current_time( 'mysql' ),
+                    ),
+                    array( '%d', '%s', '%f', '%s', '%d', '%s' )
+                );
+            } else {
+                // Update existing addon.
+                $addon_id = absint( $addon_key );
+                $processed_ids[] = $addon_id;
+
+                $wpdb->update(
+                    $table_name,
+                    array(
+                        'addon_name'  => $addon_name,
+                        'addon_price' => $addon_price,
+                    ),
+                    array( 'id' => $addon_id ),
+                    array( '%s', '%f' ),
+                    array( '%d' )
+                );
+            }
+        }
+
+        // Delete removed addons.
+        foreach ( $existing_ids as $existing_id ) {
+            if ( ! in_array( $existing_id, $processed_ids, true ) ) {
+                $wpdb->delete(
+                    $table_name,
+                    array( 'id' => $existing_id ),
+                    array( '%d' )
+                );
             }
         }
     }

@@ -93,4 +93,81 @@ class Mitzies_Jerk_Gateway_Bank_Transfer extends Mitzies_Jerk_Payment_Gateway {
     public function verify_payment( $reference ) {
         return array( 'result' => 'success' );
     }
+
+    /**
+     * Get settings fields for admin configuration.
+     *
+     * @return array
+     */
+    public function get_settings_fields() {
+        return array(
+            'account_name' => array(
+                'title'       => __( 'Account Name', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'The name on the bank account.', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+            'account_number' => array(
+                'title'       => __( 'Account Number', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'Your bank account number.', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+            'bank_name' => array(
+                'title'       => __( 'Bank Name', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'The name of your bank.', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+            'sort_code' => array(
+                'title'       => __( 'Sort Code / Routing Number', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'Bank sort code or routing number (if applicable).', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+            'iban' => array(
+                'title'       => __( 'IBAN', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'International Bank Account Number (if applicable).', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+            'swift_code' => array(
+                'title'       => __( 'SWIFT/BIC Code', 'mitzies-jerk' ),
+                'type'        => 'text',
+                'description' => __( 'SWIFT or BIC code for international transfers.', 'mitzies-jerk' ),
+                'default'     => '',
+            ),
+            'instructions' => array(
+                'title'       => __( 'Payment Instructions', 'mitzies-jerk' ),
+                'type'        => 'textarea',
+                'description' => __( 'Instructions that will be shown to the customer after checkout.', 'mitzies-jerk' ),
+                'default'     => __( 'Please make your payment directly into our bank account. Use your Order Number as the payment reference. Your order will be processed once the funds have cleared.', 'mitzies-jerk' ),
+            ),
+        );
+    }
+
+    /**
+     * Get the bank details for display.
+     *
+     * @return array
+     */
+    public function get_bank_details() {
+        return array(
+            'account_name'   => $this->get_option( 'account_name', '' ),
+            'account_number' => $this->get_option( 'account_number', '' ),
+            'bank_name'      => $this->get_option( 'bank_name', '' ),
+            'sort_code'      => $this->get_option( 'sort_code', '' ),
+            'iban'           => $this->get_option( 'iban', '' ),
+            'swift_code'     => $this->get_option( 'swift_code', '' ),
+        );
+    }
+
+    /**
+     * Get the customer-facing instructions.
+     *
+     * @return string
+     */
+    public function get_instructions() {
+        return $this->get_option( 'instructions', __( 'Please make your payment directly into our bank account.', 'mitzies-jerk' ) );
+    }
 }

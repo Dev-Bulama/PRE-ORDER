@@ -337,6 +337,9 @@ $currencies = array(
                                             <?php elseif ( 'password' === $field['type'] ) : ?>
                                                 <input type="password" name="mitzies_jerk_settings[<?php echo esc_attr( $field_name ); ?>]"
                                                        id="<?php echo esc_attr( $field_name ); ?>" value="<?php echo esc_attr( $field_value ); ?>" class="regular-text">
+                                            <?php elseif ( 'textarea' === $field['type'] ) : ?>
+                                                <textarea name="mitzies_jerk_settings[<?php echo esc_attr( $field_name ); ?>]"
+                                                          id="<?php echo esc_attr( $field_name ); ?>" rows="4" class="large-text"><?php echo esc_textarea( $field_value ); ?></textarea>
                                             <?php else : ?>
                                                 <input type="text" name="mitzies_jerk_settings[<?php echo esc_attr( $field_name ); ?>]"
                                                        id="<?php echo esc_attr( $field_name ); ?>" value="<?php echo esc_attr( $field_value ); ?>" class="regular-text">
