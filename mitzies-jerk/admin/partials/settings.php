@@ -598,32 +598,54 @@ $currencies = array(
                 </table>
 
                 <h2><?php esc_html_e( 'Plugin Pages', 'mitzies-jerk' ); ?></h2>
+                <p class="description"><?php esc_html_e( 'Select the pages for each plugin function. Each page should contain the appropriate shortcode.', 'mitzies-jerk' ); ?></p>
                 <table class="form-table">
                     <tr>
-                        <th scope="row"><?php esc_html_e( 'Menu Page', 'mitzies-jerk' ); ?></th>
+                        <th scope="row"><label for="menu_page_id"><?php esc_html_e( 'Menu Page', 'mitzies-jerk' ); ?></label></th>
                         <td>
                             <?php
                             $menu_page_id = get_option( 'mitzies_jerk_menu_page_id' );
-                            echo $menu_page_id ? '<a href="' . esc_url( get_permalink( $menu_page_id ) ) . '" target="_blank">' . esc_html( get_the_title( $menu_page_id ) ) . '</a>' : esc_html__( 'Not set', 'mitzies-jerk' );
+                            wp_dropdown_pages( array(
+                                'name'              => 'mitzies_jerk_menu_page_id',
+                                'id'                => 'menu_page_id',
+                                'selected'          => $menu_page_id,
+                                'show_option_none'  => __( '— Select —', 'mitzies-jerk' ),
+                                'option_none_value' => '',
+                            ) );
                             ?>
+                            <p class="description"><?php esc_html_e( 'Page should contain [food_menu] shortcode', 'mitzies-jerk' ); ?></p>
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><?php esc_html_e( 'Cart Page', 'mitzies-jerk' ); ?></th>
+                        <th scope="row"><label for="cart_page_id"><?php esc_html_e( 'Cart Page', 'mitzies-jerk' ); ?></label></th>
                         <td>
                             <?php
                             $cart_page_id = get_option( 'mitzies_jerk_cart_page_id' );
-                            echo $cart_page_id ? '<a href="' . esc_url( get_permalink( $cart_page_id ) ) . '" target="_blank">' . esc_html( get_the_title( $cart_page_id ) ) . '</a>' : esc_html__( 'Not set', 'mitzies-jerk' );
+                            wp_dropdown_pages( array(
+                                'name'              => 'mitzies_jerk_cart_page_id',
+                                'id'                => 'cart_page_id',
+                                'selected'          => $cart_page_id,
+                                'show_option_none'  => __( '— Select —', 'mitzies-jerk' ),
+                                'option_none_value' => '',
+                            ) );
                             ?>
+                            <p class="description"><?php esc_html_e( 'Page should contain [food_cart] shortcode', 'mitzies-jerk' ); ?></p>
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><?php esc_html_e( 'Checkout Page', 'mitzies-jerk' ); ?></th>
+                        <th scope="row"><label for="checkout_page_id"><?php esc_html_e( 'Checkout Page', 'mitzies-jerk' ); ?></label></th>
                         <td>
                             <?php
                             $checkout_page_id = get_option( 'mitzies_jerk_checkout_page_id' );
-                            echo $checkout_page_id ? '<a href="' . esc_url( get_permalink( $checkout_page_id ) ) . '" target="_blank">' . esc_html( get_the_title( $checkout_page_id ) ) . '</a>' : esc_html__( 'Not set', 'mitzies-jerk' );
+                            wp_dropdown_pages( array(
+                                'name'              => 'mitzies_jerk_checkout_page_id',
+                                'id'                => 'checkout_page_id',
+                                'selected'          => $checkout_page_id,
+                                'show_option_none'  => __( '— Select —', 'mitzies-jerk' ),
+                                'option_none_value' => '',
+                            ) );
                             ?>
+                            <p class="description"><?php esc_html_e( 'Page should contain [food_checkout] shortcode', 'mitzies-jerk' ); ?></p>
                         </td>
                     </tr>
                 </table>
