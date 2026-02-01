@@ -421,36 +421,72 @@ class Mitzies_Jerk_Checkout {
         $enabled = mitzies_jerk_get_option( 'enabled_gateways', array() );
         $gateways = array();
 
+        // Get gateway-specific settings from stored options.
+        $bank_details = '';
+        $bank_name = mitzies_jerk_get_option( 'bank_transfer_bank_name', '' );
+        $account_name = mitzies_jerk_get_option( 'bank_transfer_account_name', '' );
+        $account_number = mitzies_jerk_get_option( 'bank_transfer_account_number', '' );
+        $sort_code = mitzies_jerk_get_option( 'bank_transfer_sort_code', '' );
+
+        if ( ! empty( $bank_name ) || ! empty( $account_number ) ) {
+            $details_parts = array();
+            if ( ! empty( $bank_name ) ) {
+                $details_parts[] = sprintf( __( 'Bank: %s', 'mitzies-jerk' ), $bank_name );
+            }
+            if ( ! empty( $account_name ) ) {
+                $details_parts[] = sprintf( __( 'Account Name: %s', 'mitzies-jerk' ), $account_name );
+            }
+            if ( ! empty( $account_number ) ) {
+                $details_parts[] = sprintf( __( 'Account Number: %s', 'mitzies-jerk' ), $account_number );
+            }
+            if ( ! empty( $sort_code ) ) {
+                $details_parts[] = sprintf( __( 'Sort Code: %s', 'mitzies-jerk' ), $sort_code );
+            }
+            $bank_details = implode( "\n", $details_parts );
+        }
+
+        $cod_instructions = mitzies_jerk_get_option( 'cod_instructions', '' );
+        if ( empty( $cod_instructions ) ) {
+            $cod_instructions = __( 'Pay with cash when your order is delivered. Please have the exact amount ready.', 'mitzies-jerk' );
+        }
+
         $all_gateways = array(
             'cod'         => array(
                 'title'       => __( 'Cash on Delivery', 'mitzies-jerk' ),
-                'description' => __( 'Pay when your order arrives', 'mitzies-jerk' ),
+                'description' => ! empty( $cod_instructions ) ? $cod_instructions : __( 'Pay when your order arrives', 'mitzies-jerk' ),
                 'icon'        => '',
+                'icon_class'  => 'dashicons-money-alt',
             ),
             'bank_transfer' => array(
                 'title'       => __( 'Bank Transfer', 'mitzies-jerk' ),
                 'description' => __( 'Pay via direct bank transfer', 'mitzies-jerk' ),
                 'icon'        => '',
+                'icon_class'  => 'dashicons-bank',
+                'extra_info'  => ! empty( $bank_details ) ? nl2br( esc_html( $bank_details ) ) : '',
             ),
             'paystack'    => array(
                 'title'       => __( 'Paystack', 'mitzies-jerk' ),
                 'description' => __( 'Pay with Paystack - Cards, Bank Transfer, USSD', 'mitzies-jerk' ),
-                'icon'        => MITZIES_JERK_URL . 'assets/images/paystack.png',
+                'icon'        => '',
+                'icon_class'  => 'dashicons-credit-card',
             ),
             'flutterwave' => array(
                 'title'       => __( 'Flutterwave', 'mitzies-jerk' ),
                 'description' => __( 'Pay with Flutterwave - Cards, Bank Transfer, Mobile Money', 'mitzies-jerk' ),
-                'icon'        => MITZIES_JERK_URL . 'assets/images/flutterwave.png',
+                'icon'        => '',
+                'icon_class'  => 'dashicons-credit-card',
             ),
             'stripe'      => array(
                 'title'       => __( 'Stripe', 'mitzies-jerk' ),
                 'description' => __( 'Pay with Credit/Debit Card via Stripe', 'mitzies-jerk' ),
-                'icon'        => MITZIES_JERK_URL . 'assets/images/stripe.png',
+                'icon'        => '',
+                'icon_class'  => 'dashicons-credit-card',
             ),
             'paypal'      => array(
                 'title'       => __( 'PayPal', 'mitzies-jerk' ),
                 'description' => __( 'Pay with PayPal', 'mitzies-jerk' ),
-                'icon'        => MITZIES_JERK_URL . 'assets/images/paypal.png',
+                'icon'        => '',
+                'icon_class'  => 'dashicons-paypal',
             ),
         );
 

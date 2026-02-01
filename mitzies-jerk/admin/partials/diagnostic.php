@@ -10,6 +10,11 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+// Ensure required constants are defined.
+if ( ! defined( 'MITZIES_JERK_TABLE_PREFIX' ) ) {
+    define( 'MITZIES_JERK_TABLE_PREFIX', 'mitzies_jerk_' );
+}
+
 // Run diagnostics
 $diagnostics = array();
 
@@ -115,15 +120,27 @@ $diagnostics['elementor'] = array(
 );
 
 // Check 7: Session Handling
-$session = new Mitzies_Jerk_Session();
-$session_id = $session->get_session_id();
-$session_working = ! empty( $session_id );
+$session_working = false;
+$session_id = '';
+try {
+    global $mitzies_jerk;
+    if ( isset( $mitzies_jerk ) && isset( $mitzies_jerk->session ) ) {
+        $session_id = $mitzies_jerk->session->get_session_id();
+        $session_working = ! empty( $session_id );
+    } elseif ( class_exists( 'Mitzies_Jerk_Session' ) ) {
+        $session = new Mitzies_Jerk_Session();
+        $session_id = $session->get_session_id();
+        $session_working = ! empty( $session_id );
+    }
+} catch ( Exception $e ) {
+    $session_working = false;
+}
 
 $diagnostics['session'] = array(
     'label'   => __( 'Session Handling', 'mitzies-jerk' ),
     'value'   => $session_working ? sprintf( __( 'Session ID: %s', 'mitzies-jerk' ), substr( $session_id, 0, 16 ) . '...' ) : __( 'No session', 'mitzies-jerk' ),
-    'status'  => $session_working ? 'pass' : 'fail',
-    'message' => $session_working ? __( 'Session is working correctly', 'mitzies-jerk' ) : __( 'Session not initialized. Cart will not persist.', 'mitzies-jerk' ),
+    'status'  => $session_working ? 'pass' : 'warning',
+    'message' => $session_working ? __( 'Session is working correctly', 'mitzies-jerk' ) : __( 'Session not initialized on admin. This is normal for admin pages.', 'mitzies-jerk' ),
 );
 
 // Check 8: Food Items Count
@@ -191,13 +208,21 @@ $diagnostics['cart_contents'] = array(
 
 // Check 13: Addons Table
 $addons_table = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX . 'addons';
-$addons_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$addons_table}" );
+$addons_count = null;
+$addons_error = false;
+$addons_table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $addons_table ) ) === $addons_table;
+if ( $addons_table_exists ) {
+    $addons_count = $wpdb->get_var( "SELECT COUNT(*) FROM {$addons_table}" );
+    if ( $wpdb->last_error ) {
+        $addons_error = true;
+    }
+}
 
 $diagnostics['addons'] = array(
     'label'   => __( 'Food Addons', 'mitzies-jerk' ),
-    'value'   => $addons_count !== null ? sprintf( __( '%d addons', 'mitzies-jerk' ), $addons_count ) : __( 'Table not found', 'mitzies-jerk' ),
-    'status'  => $addons_count !== null ? 'pass' : 'fail',
-    'message' => $addons_count !== null ? __( 'Addons table is accessible', 'mitzies-jerk' ) : __( 'Addons table not found', 'mitzies-jerk' ),
+    'value'   => $addons_table_exists && ! $addons_error ? sprintf( __( '%d addons', 'mitzies-jerk' ), intval( $addons_count ) ) : __( 'Table not found', 'mitzies-jerk' ),
+    'status'  => $addons_table_exists && ! $addons_error ? 'pass' : 'fail',
+    'message' => $addons_table_exists && ! $addons_error ? __( 'Addons table is accessible', 'mitzies-jerk' ) : __( 'Addons table not found. Click "Recreate Database Tables" to fix.', 'mitzies-jerk' ),
 );
 
 // Check 14: Post Types Registered

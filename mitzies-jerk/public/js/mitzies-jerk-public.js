@@ -1084,11 +1084,27 @@
             $('.mj-payment-method').on('click', function() {
                 var $method = $(this);
                 var $radio = $method.find('input[type="radio"]');
+                var gatewayId = $method.data('gateway');
 
                 $('.mj-payment-method').removeClass('selected');
                 $method.addClass('selected');
                 $radio.prop('checked', true);
+
+                // Toggle extra info display (bank details, COD instructions)
+                $('.mj-payment-extra-info').slideUp(200);
+                if (gatewayId) {
+                    $('.mj-payment-extra-info[data-gateway="' + gatewayId + '"]').slideDown(200);
+                }
             });
+
+            // Show initial extra info if first payment method has it
+            var $firstSelected = $('.mj-payment-method.selected');
+            if ($firstSelected.length) {
+                var gatewayId = $firstSelected.data('gateway');
+                if (gatewayId) {
+                    $('.mj-payment-extra-info[data-gateway="' + gatewayId + '"]').show();
+                }
+            }
         },
 
         /**
