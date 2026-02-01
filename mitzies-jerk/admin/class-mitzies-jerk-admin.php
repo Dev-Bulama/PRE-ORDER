@@ -223,6 +223,16 @@ class Mitzies_Jerk_Admin {
             'mj-documentation',
             array( $this, 'render_documentation_page' )
         );
+
+        // Diagnostic submenu.
+        add_submenu_page(
+            'mitzies-jerk',
+            __( 'Diagnostics', 'mitzies-jerk' ),
+            __( 'Diagnostics', 'mitzies-jerk' ),
+            'manage_options',
+            'mj-diagnostics',
+            array( $this, 'render_diagnostic_page' )
+        );
     }
 
     /**
@@ -237,6 +247,13 @@ class Mitzies_Jerk_Admin {
      */
     public function render_documentation_page() {
         include MITZIES_JERK_PATH . 'admin/partials/documentation.php';
+    }
+
+    /**
+     * Render diagnostic page.
+     */
+    public function render_diagnostic_page() {
+        include MITZIES_JERK_PATH . 'admin/partials/diagnostic.php';
     }
 
     /**
@@ -269,6 +286,17 @@ class Mitzies_Jerk_Admin {
             'mitzies_jerk_settings',
             array( $this, 'sanitize_settings' )
         );
+
+        // Handle page options on form submission.
+        if ( isset( $_POST['mitzies_jerk_menu_page_id'] ) ) {
+            update_option( 'mitzies_jerk_menu_page_id', absint( $_POST['mitzies_jerk_menu_page_id'] ) );
+        }
+        if ( isset( $_POST['mitzies_jerk_cart_page_id'] ) ) {
+            update_option( 'mitzies_jerk_cart_page_id', absint( $_POST['mitzies_jerk_cart_page_id'] ) );
+        }
+        if ( isset( $_POST['mitzies_jerk_checkout_page_id'] ) ) {
+            update_option( 'mitzies_jerk_checkout_page_id', absint( $_POST['mitzies_jerk_checkout_page_id'] ) );
+        }
 
         // General settings section.
         add_settings_section(
@@ -310,6 +338,8 @@ class Mitzies_Jerk_Admin {
      * @return array Sanitized values.
      */
     public function sanitize_settings( $input ) {
+        // Get existing settings to preserve values from other tabs.
+        $existing = get_option( 'mitzies_jerk_settings', array() );
         $sanitized = array();
 
         // General settings.
@@ -352,13 +382,18 @@ class Mitzies_Jerk_Admin {
         // Payment gateways.
         $sanitized['enabled_gateways'] = isset( $input['enabled_gateways'] ) ? array_map( 'sanitize_text_field', $input['enabled_gateways'] ) : array();
 
-        // Payment gateway specific settings.
-        $gateways = array( 'paystack', 'flutterwave', 'stripe', 'paypal' );
+        // Payment gateway specific settings (all gateways including COD and Bank Transfer).
+        $gateways = array( 'cod', 'bank_transfer', 'paystack', 'flutterwave', 'stripe', 'paypal' );
         foreach ( $gateways as $gateway ) {
             $prefix = $gateway . '_';
             foreach ( $input as $key => $value ) {
                 if ( strpos( $key, $prefix ) === 0 ) {
-                    $sanitized[ $key ] = sanitize_text_field( $value );
+                    // Handle textarea fields differently
+                    if ( is_string( $value ) && strpos( $value, "\n" ) !== false ) {
+                        $sanitized[ $key ] = sanitize_textarea_field( $value );
+                    } else {
+                        $sanitized[ $key ] = sanitize_text_field( $value );
+                    }
                 }
             }
         }
@@ -404,6 +439,30 @@ class Mitzies_Jerk_Admin {
         // Advanced settings.
         $sanitized['enable_logging'] = ! empty( $input['enable_logging'] );
         $sanitized['delete_data_on_uninstall'] = ! empty( $input['delete_data_on_uninstall'] );
+
+        // Merge with existing settings to preserve values from other tabs.
+        // Only update values that were actually submitted in the form.
+        foreach ( $existing as $key => $value ) {
+            if ( ! isset( $sanitized[ $key ] ) ) {
+                $sanitized[ $key ] = $value;
+            }
+        }
+
+        // Special handling for arrays that might not be submitted (like checkboxes and time slots).
+        // Preserve delivery_time_slots if not in this submission but exists.
+        if ( ! isset( $input['delivery_time_slots'] ) && isset( $existing['delivery_time_slots'] ) ) {
+            $sanitized['delivery_time_slots'] = $existing['delivery_time_slots'];
+        }
+
+        // Preserve delivery_days if not in this submission but exists.
+        if ( ! isset( $input['delivery_days'] ) && isset( $existing['delivery_days'] ) ) {
+            $sanitized['delivery_days'] = $existing['delivery_days'];
+        }
+
+        // Preserve enabled_gateways if not in this submission but exists.
+        if ( ! isset( $input['enabled_gateways'] ) && isset( $existing['enabled_gateways'] ) ) {
+            $sanitized['enabled_gateways'] = $existing['enabled_gateways'];
+        }
 
         return $sanitized;
     }

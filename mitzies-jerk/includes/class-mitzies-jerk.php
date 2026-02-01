@@ -134,6 +134,9 @@ class Mitzies_Jerk {
         // REST API.
         require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-rest-api.php';
 
+        // Diagnostic tools.
+        require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-diagnostic.php';
+
         // Admin and public.
         require_once MITZIES_JERK_PATH . 'admin/class-mitzies-jerk-admin.php';
         require_once MITZIES_JERK_PATH . 'public/class-mitzies-jerk-public.php';
@@ -200,6 +203,9 @@ class Mitzies_Jerk {
 
         // Dashboard widget.
         $this->loader->add_action( 'wp_dashboard_setup', $plugin_admin, 'add_dashboard_widget' );
+
+        // Diagnostic tools.
+        new Mitzies_Jerk_Diagnostic();
     }
 
     /**

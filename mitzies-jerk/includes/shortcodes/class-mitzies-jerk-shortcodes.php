@@ -21,6 +21,19 @@ class Mitzies_Jerk_Shortcodes {
      * Register all shortcodes.
      */
     public function register_shortcodes() {
+        // Primary shortcodes with mitzies_jerk_ prefix (as shown in documentation)
+        add_shortcode( 'mitzies_jerk_menu', array( $this, 'food_menu' ) );
+        add_shortcode( 'mitzies_jerk_cart', array( $this, 'food_cart' ) );
+        add_shortcode( 'mitzies_jerk_checkout', array( $this, 'food_checkout' ) );
+        add_shortcode( 'mitzies_jerk_order_received', array( $this, 'food_order_received' ) );
+        add_shortcode( 'mitzies_jerk_order_tracking', array( $this, 'food_order_tracking' ) );
+        add_shortcode( 'mitzies_jerk_order_history', array( $this, 'food_my_account' ) );
+        add_shortcode( 'mitzies_jerk_categories', array( $this, 'food_categories' ) );
+        add_shortcode( 'mitzies_jerk_featured', array( $this, 'food_featured' ) );
+        add_shortcode( 'mitzies_jerk_mini_cart', array( $this, 'food_mini_cart' ) );
+        add_shortcode( 'mitzies_jerk_item', array( $this, 'single_food_item' ) );
+
+        // Legacy shortcodes for backward compatibility
         add_shortcode( 'food_menu', array( $this, 'food_menu' ) );
         add_shortcode( 'food_cart', array( $this, 'food_cart' ) );
         add_shortcode( 'food_checkout', array( $this, 'food_checkout' ) );
@@ -30,6 +43,35 @@ class Mitzies_Jerk_Shortcodes {
         add_shortcode( 'food_categories', array( $this, 'food_categories' ) );
         add_shortcode( 'food_featured', array( $this, 'food_featured' ) );
         add_shortcode( 'food_mini_cart', array( $this, 'food_mini_cart' ) );
+    }
+
+    /**
+     * Single food item shortcode.
+     *
+     * @param array $atts Shortcode attributes.
+     * @return string
+     */
+    public function single_food_item( $atts ) {
+        $atts = shortcode_atts( array(
+            'id'               => 0,
+            'layout'           => 'card',
+            'show_image'       => 'true',
+            'show_description' => 'true',
+            'show_price'       => 'true',
+            'show_add_to_cart' => 'true',
+        ), $atts, 'mitzies_jerk_item' );
+
+        $post_id = intval( $atts['id'] );
+
+        if ( ! $post_id || 'mj_food_item' !== get_post_type( $post_id ) ) {
+            return '<p class="mj-notice mj-notice-error">' . esc_html__( 'Invalid food item ID.', 'mitzies-jerk' ) . '</p>';
+        }
+
+        ob_start();
+        echo '<div class="mj-single-item-shortcode mj-layout-' . esc_attr( $atts['layout'] ) . '">';
+        self::render_food_item( $post_id );
+        echo '</div>';
+        return ob_get_clean();
     }
 
     /**
