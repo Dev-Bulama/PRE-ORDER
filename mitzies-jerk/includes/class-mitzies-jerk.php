@@ -195,6 +195,9 @@ class Mitzies_Jerk {
         $this->loader->add_filter( 'manage_mj_order_posts_columns', $plugin_admin, 'order_columns' );
         $this->loader->add_action( 'manage_mj_order_posts_custom_column', $plugin_admin, 'order_column_data', 10, 2 );
 
+        // Row actions for food items (Edit/Quick Edit links).
+        $this->loader->add_filter( 'post_row_actions', $plugin_admin, 'food_item_row_actions', 10, 2 );
+
         // Admin notices.
         $this->loader->add_action( 'admin_notices', $plugin_admin, 'admin_notices' );
 

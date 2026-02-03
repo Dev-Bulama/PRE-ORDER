@@ -1009,4 +1009,45 @@ class Mitzies_Jerk_Admin {
         echo '</tbody></table>';
         echo '<p class="textright"><a href="' . esc_url( admin_url( 'edit.php?post_type=mj_order' ) ) . '">' . esc_html__( 'View all orders', 'mitzies-jerk' ) . '</a></p>';
     }
+
+    /**
+     * Add row actions for food items.
+     *
+     * @param array   $actions Existing actions.
+     * @param WP_Post $post    Post object.
+     * @return array
+     */
+    public function food_item_row_actions( $actions, $post ) {
+        if ( 'mj_food_item' !== $post->post_type ) {
+            return $actions;
+        }
+
+        // Ensure Edit link is present.
+        if ( current_user_can( 'edit_post', $post->ID ) && ! isset( $actions['edit'] ) ) {
+            $actions = array_merge(
+                array(
+                    'edit' => sprintf(
+                        '<a href="%s" aria-label="%s">%s</a>',
+                        get_edit_post_link( $post->ID ),
+                        /* translators: %s: Post title. */
+                        esc_attr( sprintf( __( 'Edit &#8220;%s&#8221;', 'mitzies-jerk' ), get_the_title( $post->ID ) ) ),
+                        __( 'Edit', 'mitzies-jerk' )
+                    ),
+                ),
+                $actions
+            );
+        }
+
+        // Ensure Quick Edit link is present.
+        if ( current_user_can( 'edit_post', $post->ID ) && ! isset( $actions['inline hide-if-no-js'] ) ) {
+            $actions['inline hide-if-no-js'] = sprintf(
+                '<button type="button" class="button-link editinline" aria-label="%s" aria-expanded="false">%s</button>',
+                /* translators: %s: Post title. */
+                esc_attr( sprintf( __( 'Quick edit &#8220;%s&#8221; inline', 'mitzies-jerk' ), get_the_title( $post->ID ) ) ),
+                __( 'Quick Edit', 'mitzies-jerk' )
+            );
+        }
+
+        return $actions;
+    }
 }
