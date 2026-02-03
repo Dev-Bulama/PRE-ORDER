@@ -195,7 +195,27 @@ class Mitzies_Jerk_Shortcodes {
         $stock_status = get_post_meta( $post_id, '_mj_stock_status', true );
         $is_featured = get_post_meta( $post_id, '_mj_is_featured', true );
         $rating = Mitzies_Jerk_Database::get_average_rating( $post_id );
+
+        // Get addons with fallback.
         $addons = Mitzies_Jerk_Database::get_food_addons( $post_id );
+
+        // Fallback: direct database query if method returns empty.
+        if ( empty( $addons ) ) {
+            global $wpdb;
+            $table_prefix = defined( 'MITZIES_JERK_TABLE_PREFIX' ) ? MITZIES_JERK_TABLE_PREFIX : 'mitzies_jerk_';
+            $addons_table = $wpdb->prefix . $table_prefix . 'addons';
+            $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $addons_table ) );
+
+            if ( $table_exists ) {
+                $addons = $wpdb->get_results(
+                    $wpdb->prepare(
+                        "SELECT * FROM `$addons_table` WHERE food_item_id = %d AND status = 'active' ORDER BY sort_order ASC",
+                        $post_id
+                    )
+                );
+            }
+        }
+
         $display_price = $sale_price ? $sale_price : $price;
         ?>
         <div class="mj-food-item<?php echo $is_featured ? ' featured' : ''; ?><?php echo 'outofstock' === $stock_status ? ' out-of-stock' : ''; ?>">
@@ -765,13 +785,13 @@ class Mitzies_Jerk_Shortcodes {
                 <form id="mj-tracking-form" class="mj-tracking-form">
                     <div class="mj-form-group">
                         <label for="tracking_order_number"><?php esc_html_e( 'Order Number', 'mitzies-jerk' ); ?></label>
-                        <input type="text" id="tracking_order_number" name="order_number" value="<?php echo esc_attr( $order_number ); ?>" placeholder="<?php esc_attr_e( 'e.g., MJ000001', 'mitzies-jerk' ); ?>" required>
+                        <input type="text" id="tracking_order_number" name="order_number" class="mj-tracking-input" value="<?php echo esc_attr( $order_number ); ?>" placeholder="<?php esc_attr_e( 'e.g., MJ000001', 'mitzies-jerk' ); ?>" required>
                     </div>
                     <div class="mj-form-group">
                         <label for="tracking_email"><?php esc_html_e( 'Email Address', 'mitzies-jerk' ); ?></label>
-                        <input type="email" id="tracking_email" name="email" placeholder="<?php esc_attr_e( 'Email used for the order', 'mitzies-jerk' ); ?>" required>
+                        <input type="email" id="tracking_email" name="email" class="mj-tracking-email" placeholder="<?php esc_attr_e( 'Email used for the order', 'mitzies-jerk' ); ?>" required>
                     </div>
-                    <button type="submit" class="mj-btn mj-btn-primary"><?php esc_html_e( 'Track Order', 'mitzies-jerk' ); ?></button>
+                    <button type="submit" class="mj-btn mj-btn-primary mj-tracking-btn"><?php esc_html_e( 'Track Order', 'mitzies-jerk' ); ?></button>
                 </form>
             </div>
 
