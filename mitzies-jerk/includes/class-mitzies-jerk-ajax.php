@@ -215,10 +215,27 @@ class Mitzies_Jerk_Ajax {
         $result = $checkout->process_checkout( $posted_data );
 
         if ( is_wp_error( $result ) ) {
-            wp_send_json_error( $result->get_error_message() );
+            wp_send_json_error( array( 'message' => $result->get_error_message() ) );
         }
 
-        wp_send_json_success( $result );
+        // Flatten the response for JS compatibility.
+        $response = array(
+            'order_id' => $result['order_id'],
+        );
+
+        // Extract redirect URL from payment result.
+        if ( isset( $result['payment']['redirect'] ) ) {
+            $response['redirect_url'] = $result['payment']['redirect'];
+        } elseif ( isset( $result['payment']['payment_url'] ) ) {
+            $response['redirect_url'] = $result['payment']['payment_url'];
+        }
+
+        // Include payment result status.
+        if ( isset( $result['payment']['result'] ) ) {
+            $response['result'] = $result['payment']['result'];
+        }
+
+        wp_send_json_success( $response );
     }
 
     /**
@@ -433,6 +450,8 @@ class Mitzies_Jerk_Ajax {
         $sale_price = get_post_meta( $post_id, '_mj_sale_price', true );
         $stock_status = get_post_meta( $post_id, '_mj_stock_status', true );
         $is_featured = get_post_meta( $post_id, '_mj_is_featured', true );
+        $addons = Mitzies_Jerk_Database::get_food_addons( $post_id );
+        $display_price = $sale_price ? $sale_price : $price;
         ?>
         <div class="mj-food-item<?php echo $is_featured ? ' featured' : ''; ?><?php echo 'outofstock' === $stock_status ? ' out-of-stock' : ''; ?>">
             <div class="mj-food-image">
@@ -468,9 +487,25 @@ class Mitzies_Jerk_Ajax {
                         <?php echo esc_html( mitzies_jerk_format_price( $price ) ); ?>
                     <?php endif; ?>
                 </div>
+                <?php if ( ! empty( $addons ) ) : ?>
+                    <div class="mj-food-addons">
+                        <span class="mj-addons-label"><?php esc_html_e( 'Available Add-ons:', 'mitzies-jerk' ); ?></span>
+                        <div class="mj-addons-list">
+                            <?php foreach ( $addons as $addon ) : ?>
+                                <label class="mj-addon-option">
+                                    <input type="checkbox" class="mj-addon-input"
+                                           data-addon-id="<?php echo esc_attr( $addon->id ); ?>"
+                                           data-price="<?php echo esc_attr( $addon->addon_price ); ?>">
+                                    <span class="mj-addon-name"><?php echo esc_html( $addon->addon_name ); ?></span>
+                                    <span class="mj-addon-price">(+<?php echo esc_html( mitzies_jerk_format_price( $addon->addon_price ) ); ?>)</span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <div class="mj-food-actions">
                     <?php if ( 'outofstock' !== $stock_status ) : ?>
-                        <button class="mj-add-to-cart-btn" data-item-id="<?php echo esc_attr( $post_id ); ?>">
+                        <button class="mj-add-to-cart-btn" data-item-id="<?php echo esc_attr( $post_id ); ?>" data-base-price="<?php echo esc_attr( $display_price ); ?>">
                             <span class="dashicons dashicons-cart"></span>
                             <?php esc_html_e( 'Add to Cart', 'mitzies-jerk' ); ?>
                         </button>

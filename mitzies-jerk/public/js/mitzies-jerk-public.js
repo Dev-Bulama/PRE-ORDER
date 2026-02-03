@@ -724,7 +724,16 @@
                     } else {
                         $btn.removeClass('loading').prop('disabled', false);
                         $btn.html(mitzies_jerk_params.i18n.place_order);
-                        MitziesJerk.showNotice('error', response.data.message);
+                        // Handle both string and object error responses.
+                        var errorMsg = mitzies_jerk_params.i18n.error;
+                        if (response.data) {
+                            if (typeof response.data === 'string') {
+                                errorMsg = response.data;
+                            } else if (response.data.message) {
+                                errorMsg = response.data.message;
+                            }
+                        }
+                        MitziesJerk.showNotice('error', errorMsg);
                     }
                 },
                 error: function() {
