@@ -733,9 +733,8 @@ class Mitzies_Jerk_Admin {
                         'addon_price'  => $addon_price,
                         'status'       => 'active',
                         'sort_order'   => 0,
-                        'created_at'   => current_time( 'mysql' ),
                     ),
-                    array( '%d', '%s', '%f', '%s', '%d', '%s' )
+                    array( '%d', '%s', '%f', '%s', '%d' )
                 );
             } else {
                 // Update existing addon.
