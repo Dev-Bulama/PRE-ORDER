@@ -25,6 +25,39 @@ class Mitzies_Jerk_Post_Types {
     public function register_post_types() {
         $this->register_food_item_post_type();
         $this->register_order_post_type();
+        $this->register_post_meta();
+    }
+
+    /**
+     * Register post meta for REST API support.
+     *
+     * @since    1.0.0
+     */
+    private function register_post_meta() {
+        // Register meta fields for food items to work with block editor.
+        $meta_fields = array(
+            '_mj_price'            => array( 'type' => 'number', 'default' => 0 ),
+            '_mj_sale_price'       => array( 'type' => 'number', 'default' => '' ),
+            '_mj_stock_status'     => array( 'type' => 'string', 'default' => 'instock' ),
+            '_mj_stock_quantity'   => array( 'type' => 'integer', 'default' => 0 ),
+            '_mj_is_featured'      => array( 'type' => 'boolean', 'default' => false ),
+            '_mj_ingredients'      => array( 'type' => 'string', 'default' => '' ),
+            '_mj_preparation_time' => array( 'type' => 'string', 'default' => '' ),
+            '_mj_calories'         => array( 'type' => 'string', 'default' => '' ),
+        );
+
+        foreach ( $meta_fields as $meta_key => $args ) {
+            register_post_meta( 'mj_food_item', $meta_key, array(
+                'show_in_rest'      => true,
+                'single'            => true,
+                'type'              => $args['type'],
+                'default'           => $args['default'],
+                'sanitize_callback' => $args['type'] === 'number' ? 'floatval' : ( $args['type'] === 'integer' ? 'absint' : 'sanitize_text_field' ),
+                'auth_callback'     => function() {
+                    return current_user_can( 'edit_posts' );
+                },
+            ) );
+        }
     }
 
     /**

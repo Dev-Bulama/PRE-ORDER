@@ -129,9 +129,11 @@
 
         /**
          * Switch Add to Cart button to quantity controls (Uber Eats style)
+         * Note: Single item page buttons have dedicated quantity controls, so skip them.
          */
         switchToQuantityControls: function(itemId, quantity, cartKey) {
-            var $btn = $('.mj-add-to-cart-btn[data-item-id="' + itemId + '"]');
+            // Exclude single item page buttons (they have dedicated quantity controls)
+            var $btn = $('.mj-add-to-cart-btn[data-item-id="' + itemId + '"]').not('.mj-add-to-cart-single');
 
             if (!$btn.length) return;
 
