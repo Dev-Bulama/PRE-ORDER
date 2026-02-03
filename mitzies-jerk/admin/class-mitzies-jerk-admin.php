@@ -626,7 +626,12 @@ class Mitzies_Jerk_Admin {
                 return;
             }
 
-            if ( ! current_user_can( 'edit_post', $post_id ) ) {
+            // Check if user can edit - allow admins and users with the capability.
+            $can_edit = current_user_can( 'administrator' ) ||
+                        current_user_can( 'edit_mj_food_items' ) ||
+                        current_user_can( 'edit_post', $post_id );
+
+            if ( ! $can_edit ) {
                 return;
             }
 
@@ -1022,30 +1027,40 @@ class Mitzies_Jerk_Admin {
             return $actions;
         }
 
-        // Ensure Edit link is present.
-        if ( current_user_can( 'edit_post', $post->ID ) && ! isset( $actions['edit'] ) ) {
-            $actions = array_merge(
-                array(
-                    'edit' => sprintf(
-                        '<a href="%s" aria-label="%s">%s</a>',
-                        get_edit_post_link( $post->ID ),
-                        /* translators: %s: Post title. */
-                        esc_attr( sprintf( __( 'Edit &#8220;%s&#8221;', 'mitzies-jerk' ), get_the_title( $post->ID ) ) ),
-                        __( 'Edit', 'mitzies-jerk' )
-                    ),
-                ),
-                $actions
-            );
-        }
+        // Check if user can edit - allow admins and users with the capability.
+        $can_edit = current_user_can( 'administrator' ) ||
+                    current_user_can( 'edit_mj_food_items' ) ||
+                    current_user_can( 'edit_post', $post->ID );
 
-        // Ensure Quick Edit link is present.
-        if ( current_user_can( 'edit_post', $post->ID ) && ! isset( $actions['inline hide-if-no-js'] ) ) {
-            $actions['inline hide-if-no-js'] = sprintf(
-                '<button type="button" class="button-link editinline" aria-label="%s" aria-expanded="false">%s</button>',
-                /* translators: %s: Post title. */
-                esc_attr( sprintf( __( 'Quick edit &#8220;%s&#8221; inline', 'mitzies-jerk' ), get_the_title( $post->ID ) ) ),
-                __( 'Quick Edit', 'mitzies-jerk' )
+        if ( $can_edit ) {
+            // Build edit link manually if not present.
+            $edit_link = admin_url( sprintf( 'post.php?post=%d&action=edit', $post->ID ) );
+
+            // Always rebuild actions with edit first.
+            $new_actions = array(
+                'edit' => sprintf(
+                    '<a href="%s" aria-label="%s">%s</a>',
+                    esc_url( $edit_link ),
+                    /* translators: %s: Post title. */
+                    esc_attr( sprintf( __( 'Edit &#8220;%s&#8221;', 'mitzies-jerk' ), get_the_title( $post->ID ) ) ),
+                    __( 'Edit', 'mitzies-jerk' )
+                ),
+                'inline hide-if-no-js' => sprintf(
+                    '<button type="button" class="button-link editinline" aria-label="%s" aria-expanded="false">%s</button>',
+                    /* translators: %s: Post title. */
+                    esc_attr( sprintf( __( 'Quick edit &#8220;%s&#8221; inline', 'mitzies-jerk' ), get_the_title( $post->ID ) ) ),
+                    __( 'Quick Edit', 'mitzies-jerk' )
+                ),
             );
+
+            // Merge with existing actions, placing edit links first.
+            foreach ( $actions as $key => $action ) {
+                if ( 'edit' !== $key && 'inline hide-if-no-js' !== $key ) {
+                    $new_actions[ $key ] = $action;
+                }
+            }
+
+            $actions = $new_actions;
         }
 
         return $actions;

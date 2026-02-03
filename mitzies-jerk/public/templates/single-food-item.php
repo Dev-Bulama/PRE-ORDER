@@ -30,7 +30,32 @@ while ( have_posts() ) :
     $serving_size = get_post_meta( $post_id, '_mj_serving_size', true );
 
     // Get addons from database (primary) or post meta (fallback)
-    $db_addons = Mitzies_Jerk_Database::get_food_addons( $post_id );
+    $db_addons = array();
+
+    // Try the Database class method first.
+    if ( class_exists( 'Mitzies_Jerk_Database' ) ) {
+        $db_addons = Mitzies_Jerk_Database::get_food_addons( $post_id );
+    }
+
+    // Fallback: direct database query if class method returns empty.
+    if ( empty( $db_addons ) ) {
+        global $wpdb;
+        $table_prefix = defined( 'MITZIES_JERK_TABLE_PREFIX' ) ? MITZIES_JERK_TABLE_PREFIX : 'mitzies_jerk_';
+        $addons_table = $wpdb->prefix . $table_prefix . 'addons';
+
+        // Check if table exists before querying.
+        $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $addons_table ) );
+
+        if ( $table_exists ) {
+            $db_addons = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM `$addons_table` WHERE food_item_id = %d AND status = 'active' ORDER BY sort_order ASC",
+                    $post_id
+                )
+            );
+        }
+    }
+
     $meta_addons = get_post_meta( $post_id, '_mj_addons', true );
 
     // Use database addons if available, otherwise fall back to meta
