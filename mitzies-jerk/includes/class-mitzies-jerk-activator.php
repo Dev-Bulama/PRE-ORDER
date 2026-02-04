@@ -323,15 +323,16 @@ class Mitzies_Jerk_Activator {
             'mj_restaurant_staff',
             __( 'Restaurant Staff', 'mitzies-jerk' ),
             array(
-                'read'                     => true,
-                'edit_mj_orders'           => true,
-                'edit_others_mj_orders'    => true,
-                'read_mj_orders'           => true,
-                'delete_mj_orders'         => false,
-                'edit_mj_food_items'       => true,
-                'edit_others_mj_food_items' => true,
-                'read_mj_food_items'       => true,
-                'delete_mj_food_items'     => false,
+                'read'                          => true,
+                'edit_mj_orders'                => true,
+                'edit_others_mj_orders'         => true,
+                'read_mj_orders'                => true,
+                'delete_mj_orders'              => false,
+                'edit_mj_food_items'            => true,
+                'edit_others_mj_food_items'     => true,
+                'edit_published_mj_food_items'  => true,
+                'read_mj_food_items'            => true,
+                'delete_mj_food_items'          => false,
             )
         );
 
@@ -340,46 +341,91 @@ class Mitzies_Jerk_Activator {
             'mj_restaurant_manager',
             __( 'Restaurant Manager', 'mitzies-jerk' ),
             array(
-                'read'                         => true,
-                'edit_mj_orders'               => true,
-                'edit_others_mj_orders'        => true,
-                'read_mj_orders'               => true,
-                'delete_mj_orders'             => true,
-                'delete_others_mj_orders'      => true,
-                'edit_mj_food_items'           => true,
-                'edit_others_mj_food_items'    => true,
-                'publish_mj_food_items'        => true,
-                'read_mj_food_items'           => true,
-                'delete_mj_food_items'         => true,
-                'delete_others_mj_food_items'  => true,
-                'manage_mj_food_categories'    => true,
-                'manage_mj_settings'           => true,
+                'read'                           => true,
+                'edit_mj_orders'                 => true,
+                'edit_others_mj_orders'          => true,
+                'edit_published_mj_orders'       => true,
+                'read_mj_orders'                 => true,
+                'delete_mj_orders'               => true,
+                'delete_others_mj_orders'        => true,
+                'delete_published_mj_orders'     => true,
+                'edit_mj_food_items'             => true,
+                'edit_others_mj_food_items'      => true,
+                'edit_published_mj_food_items'   => true,
+                'edit_private_mj_food_items'     => true,
+                'publish_mj_food_items'          => true,
+                'read_mj_food_items'             => true,
+                'read_private_mj_food_items'     => true,
+                'delete_mj_food_items'           => true,
+                'delete_others_mj_food_items'    => true,
+                'delete_published_mj_food_items' => true,
+                'delete_private_mj_food_items'   => true,
+                'manage_mj_food_categories'      => true,
+                'manage_mj_settings'             => true,
             )
         );
 
-        // Add capabilities to administrator.
+        // Add capabilities to administrator - all capabilities for food items and orders.
+        self::add_admin_capabilities();
+    }
+
+    /**
+     * Add all required capabilities to administrator role.
+     *
+     * @since    1.0.0
+     */
+    public static function add_admin_capabilities() {
         $admin_role = get_role( 'administrator' );
 
-        if ( $admin_role ) {
-            $capabilities = array(
-                'edit_mj_orders',
-                'edit_others_mj_orders',
-                'read_mj_orders',
-                'delete_mj_orders',
-                'delete_others_mj_orders',
-                'edit_mj_food_items',
-                'edit_others_mj_food_items',
-                'publish_mj_food_items',
-                'read_mj_food_items',
-                'delete_mj_food_items',
-                'delete_others_mj_food_items',
-                'manage_mj_food_categories',
-                'manage_mj_settings',
-                'manage_mj_coupons',
-                'view_mj_reports',
-            );
+        if ( ! $admin_role ) {
+            return;
+        }
 
-            foreach ( $capabilities as $cap ) {
+        // Complete list of capabilities for custom post types.
+        $capabilities = array(
+            // Food item capabilities.
+            'edit_mj_food_item',
+            'read_mj_food_item',
+            'delete_mj_food_item',
+            'edit_mj_food_items',
+            'edit_others_mj_food_items',
+            'edit_published_mj_food_items',
+            'edit_private_mj_food_items',
+            'publish_mj_food_items',
+            'read_mj_food_items',
+            'read_private_mj_food_items',
+            'delete_mj_food_items',
+            'delete_others_mj_food_items',
+            'delete_published_mj_food_items',
+            'delete_private_mj_food_items',
+            // Order capabilities.
+            'edit_mj_order',
+            'read_mj_order',
+            'delete_mj_order',
+            'edit_mj_orders',
+            'edit_others_mj_orders',
+            'edit_published_mj_orders',
+            'edit_private_mj_orders',
+            'publish_mj_orders',
+            'read_mj_orders',
+            'read_private_mj_orders',
+            'delete_mj_orders',
+            'delete_others_mj_orders',
+            'delete_published_mj_orders',
+            'delete_private_mj_orders',
+            // Taxonomy capabilities.
+            'manage_mj_food_categories',
+            'edit_mj_food_categories',
+            'delete_mj_food_categories',
+            'assign_mj_food_categories',
+            // Plugin-specific capabilities.
+            'manage_mj_settings',
+            'manage_mj_coupons',
+            'view_mj_reports',
+        );
+
+        foreach ( $capabilities as $cap ) {
+            if ( ! $admin_role->has_cap( $cap ) ) {
                 $admin_role->add_cap( $cap );
             }
         }

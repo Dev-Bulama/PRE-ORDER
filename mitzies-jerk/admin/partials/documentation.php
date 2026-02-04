@@ -266,6 +266,92 @@ if ( ! defined( 'ABSPATH' ) ) {
             </div>
         </div>
 
+        <!-- Food Item Management Guide -->
+        <div class="mj-card mj-docs-card">
+            <div class="mj-card-header">
+                <h2><span class="dashicons dashicons-carrot"></span> <?php esc_html_e( 'Food Item Management', 'mitzies-jerk' ); ?></h2>
+            </div>
+            <div class="mj-card-body">
+                <h4><?php esc_html_e( 'Adding a New Food Item', 'mitzies-jerk' ); ?></h4>
+                <ol class="mj-guide-list">
+                    <li><?php esc_html_e( 'Go to Mitzies Jerk > Add New Food in your WordPress admin', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Enter the food item title (e.g., "Jerk Chicken Deluxe")', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Add a description in the main content area', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'In the "Food Item Data" box, set the Regular Price (required)', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Optionally set a Sale Price for discounted items', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Set stock status and quantity if needed', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Add a featured image using the right sidebar', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Assign to a category (Main Dishes, Sides, etc.)', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Click Publish to make the item visible', 'mitzies-jerk' ); ?></li>
+                </ol>
+                <p><a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=mj_food_item' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Add New Food Item', 'mitzies-jerk' ); ?></a></p>
+
+                <hr>
+
+                <h4><?php esc_html_e( 'Editing Food Items', 'mitzies-jerk' ); ?></h4>
+                <ol class="mj-guide-list">
+                    <li><?php esc_html_e( 'Go to Mitzies Jerk > All Food Items', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Hover over the item you want to edit', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Click "Edit" for full editing or "Quick Edit" for quick changes', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Make your changes and click Update', 'mitzies-jerk' ); ?></li>
+                </ol>
+                <p class="description"><?php esc_html_e( 'Note: If Edit links are not visible, go to Mitzies Jerk > Diagnostics and click "Reset Admin Capabilities".', 'mitzies-jerk' ); ?></p>
+                <p><a href="<?php echo esc_url( admin_url( 'edit.php?post_type=mj_food_item' ) ); ?>" class="button"><?php esc_html_e( 'View All Food Items', 'mitzies-jerk' ); ?></a></p>
+
+                <hr>
+
+                <h4><?php esc_html_e( 'Adding Add-ons/Extras to Food Items', 'mitzies-jerk' ); ?></h4>
+                <p><?php esc_html_e( 'Add-ons allow customers to customize their orders with extras like toppings, sides, or special requests.', 'mitzies-jerk' ); ?></p>
+                <ol class="mj-guide-list">
+                    <li><?php esc_html_e( 'Edit an existing food item or create a new one', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Scroll down to the "Food Item Data" meta box', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Click the "Add-ons" tab', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Click "Add New Add-on" button', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Enter the add-on name (e.g., "Extra Cheese", "Large Size")', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Set the additional price for the add-on', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Repeat for more add-ons', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Click Update/Publish to save', 'mitzies-jerk' ); ?></li>
+                </ol>
+                <p class="description"><?php esc_html_e( 'Add-ons will appear as checkboxes on the food item page. Customers can select multiple add-ons.', 'mitzies-jerk' ); ?></p>
+
+                <hr>
+
+                <h4><?php esc_html_e( 'Deleting Food Items', 'mitzies-jerk' ); ?></h4>
+                <ol class="mj-guide-list">
+                    <li><?php esc_html_e( 'Go to Mitzies Jerk > All Food Items', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Hover over the item you want to delete', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Click "Trash" to move to trash, or use bulk actions', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'To permanently delete, go to Trash and click "Delete Permanently"', 'mitzies-jerk' ); ?></li>
+                </ol>
+
+                <hr>
+
+                <h4><?php esc_html_e( 'How Customers Purchase Food', 'mitzies-jerk' ); ?></h4>
+                <p><?php esc_html_e( 'The customer ordering process:', 'mitzies-jerk' ); ?></p>
+                <ol class="mj-guide-list">
+                    <li><?php esc_html_e( 'Customers browse food items on the Menu page', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'They can click on an item to see details, ingredients, and available add-ons', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'On the item page, they can select add-ons and adjust quantity', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'Click "Add to Cart" to add the item with selected add-ons', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'From the Cart page, they can review and modify their order', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'At Checkout, they enter delivery details and select payment method', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'After payment, they receive an order confirmation', 'mitzies-jerk' ); ?></li>
+                    <li><?php esc_html_e( 'They can track their order using the order number', 'mitzies-jerk' ); ?></li>
+                </ol>
+
+                <hr>
+
+                <h4><?php esc_html_e( 'Troubleshooting', 'mitzies-jerk' ); ?></h4>
+                <ul class="mj-troubleshoot-list">
+                    <li><strong><?php esc_html_e( 'Cannot edit food items:', 'mitzies-jerk' ); ?></strong> <?php esc_html_e( 'Go to Diagnostics and click "Reset Admin Capabilities"', 'mitzies-jerk' ); ?></li>
+                    <li><strong><?php esc_html_e( 'Prices not showing:', 'mitzies-jerk' ); ?></strong> <?php esc_html_e( 'Ensure you set the Regular Price in the Food Item Data box', 'mitzies-jerk' ); ?></li>
+                    <li><strong><?php esc_html_e( 'Add-ons not displaying:', 'mitzies-jerk' ); ?></strong> <?php esc_html_e( 'Make sure to save/update the food item after adding add-ons', 'mitzies-jerk' ); ?></li>
+                    <li><strong><?php esc_html_e( 'Database errors:', 'mitzies-jerk' ); ?></strong> <?php esc_html_e( 'Go to Diagnostics and click "Recreate Database Tables"', 'mitzies-jerk' ); ?></li>
+                </ul>
+                <p><a href="<?php echo esc_url( admin_url( 'admin.php?page=mj-diagnostics' ) ); ?>" class="button"><?php esc_html_e( 'Go to Diagnostics', 'mitzies-jerk' ); ?></a></p>
+            </div>
+        </div>
+
         <!-- Support -->
         <div class="mj-card mj-docs-card">
             <div class="mj-card-header">

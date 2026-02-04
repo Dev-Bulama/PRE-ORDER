@@ -22,6 +22,31 @@ class Mitzies_Jerk_Diagnostic {
         add_action( 'admin_post_mj_recreate_tables', array( $this, 'recreate_tables' ) );
         add_action( 'admin_post_mj_create_sample_data', array( $this, 'create_sample_data' ) );
         add_action( 'admin_post_mj_flush_cache', array( $this, 'flush_cache' ) );
+        add_action( 'admin_post_mj_reset_capabilities', array( $this, 'reset_capabilities' ) );
+    }
+
+    /**
+     * Reset administrator capabilities.
+     */
+    public function reset_capabilities() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized', 'mitzies-jerk' ) );
+        }
+
+        check_admin_referer( 'mj_reset_capabilities', 'mj_reset_caps_nonce' );
+
+        // Delete the caps version to force a reset.
+        delete_option( 'mitzies_jerk_caps_version' );
+
+        // Run the capability setup.
+        require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-activator.php';
+        Mitzies_Jerk_Activator::add_admin_capabilities();
+
+        // Update the version.
+        update_option( 'mitzies_jerk_caps_version', '1.1' );
+
+        wp_safe_redirect( add_query_arg( 'mj_message', 'caps_reset', admin_url( 'admin.php?page=mj-diagnostics' ) ) );
+        exit;
     }
 
     /**

@@ -297,6 +297,30 @@ if ( isset( $_POST['mj_ajax_test'] ) && wp_verify_nonce( $_POST['mj_ajax_test_no
         </div>
     </div>
 
+    <?php
+    // Display success messages.
+    if ( isset( $_GET['mj_message'] ) ) {
+        $message = '';
+        switch ( sanitize_text_field( wp_unslash( $_GET['mj_message'] ) ) ) {
+            case 'tables_created':
+                $message = __( 'Database tables have been recreated successfully.', 'mitzies-jerk' );
+                break;
+            case 'sample_created':
+                $message = __( 'Sample food items have been created successfully.', 'mitzies-jerk' );
+                break;
+            case 'cache_flushed':
+                $message = __( 'Plugin cache has been cleared successfully.', 'mitzies-jerk' );
+                break;
+            case 'caps_reset':
+                $message = __( 'Administrator capabilities have been reset successfully. You should now be able to edit and delete food items.', 'mitzies-jerk' );
+                break;
+        }
+        if ( $message ) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+        }
+    }
+    ?>
+
     <div class="mj-diagnostic-grid">
         <!-- System Status -->
         <div class="mj-card">
@@ -380,6 +404,17 @@ if ( isset( $_POST['mj_ajax_test'] ) && wp_verify_nonce( $_POST['mj_ajax_test_no
                         <button type="submit" class="button">
                             <span class="dashicons dashicons-trash"></span> <?php esc_html_e( 'Clear Plugin Cache', 'mitzies-jerk' ); ?>
                         </button>
+                    </p>
+                </form>
+
+                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                    <?php wp_nonce_field( 'mj_reset_capabilities', 'mj_reset_caps_nonce' ); ?>
+                    <input type="hidden" name="action" value="mj_reset_capabilities">
+                    <p>
+                        <button type="submit" class="button">
+                            <span class="dashicons dashicons-admin-users"></span> <?php esc_html_e( 'Reset Admin Capabilities', 'mitzies-jerk' ); ?>
+                        </button>
+                        <span class="description"><?php esc_html_e( 'Use this if you cannot edit or delete food items.', 'mitzies-jerk' ); ?></span>
                     </p>
                 </form>
             </div>
