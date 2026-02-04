@@ -192,6 +192,9 @@ class Mitzies_Jerk {
         $this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'add_meta_boxes' );
         $this->loader->add_action( 'save_post', $plugin_admin, 'save_meta_boxes', 10, 2 );
 
+        // Also hook into save_post_mj_food_item for more specific targeting.
+        $this->loader->add_action( 'save_post_mj_food_item', $plugin_admin, 'save_meta_boxes', 10, 2 );
+
         // Admin columns.
         $this->loader->add_filter( 'manage_mj_food_item_posts_columns', $plugin_admin, 'food_item_columns' );
         $this->loader->add_action( 'manage_mj_food_item_posts_custom_column', $plugin_admin, 'food_item_column_data', 10, 2 );
