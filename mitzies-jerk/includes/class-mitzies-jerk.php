@@ -185,6 +185,9 @@ class Mitzies_Jerk {
         // Settings.
         $this->loader->add_action( 'admin_init', $plugin_admin, 'register_settings' );
 
+        // Ensure capabilities are set for existing installations.
+        $this->loader->add_action( 'admin_init', $this, 'maybe_setup_capabilities' );
+
         // Meta boxes.
         $this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'add_meta_boxes' );
         $this->loader->add_action( 'save_post', $plugin_admin, 'save_meta_boxes', 10, 2 );
@@ -362,6 +365,35 @@ class Mitzies_Jerk {
         // Require the Elementor integration class.
         require_once MITZIES_JERK_PATH . 'includes/elementor/class-mitzies-jerk-elementor.php';
         Mitzies_Jerk_Elementor::get_instance();
+    }
+
+    /**
+     * Ensure capabilities are set up for existing installations.
+     *
+     * This runs on admin_init to fix installations that were
+     * activated before all capabilities were properly defined.
+     *
+     * @since    1.0.0
+     */
+    public function maybe_setup_capabilities() {
+        // Check if we've already set up the complete capabilities.
+        $caps_version = get_option( 'mitzies_jerk_caps_version', '0' );
+
+        // Current version of capabilities - increment this when adding new caps.
+        $current_caps_version = '1.1';
+
+        if ( version_compare( $caps_version, $current_caps_version, '<' ) ) {
+            // Require activator if not already loaded.
+            if ( ! class_exists( 'Mitzies_Jerk_Activator' ) ) {
+                require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-activator.php';
+            }
+
+            // Add capabilities.
+            Mitzies_Jerk_Activator::add_admin_capabilities();
+
+            // Mark as done.
+            update_option( 'mitzies_jerk_caps_version', $current_caps_version );
+        }
     }
 
     /**
