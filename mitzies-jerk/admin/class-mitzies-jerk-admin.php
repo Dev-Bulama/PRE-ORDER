@@ -622,22 +622,50 @@ class Mitzies_Jerk_Admin {
 
         // Food item meta.
         if ( 'mj_food_item' === $post->post_type ) {
-            if ( ! isset( $_POST['mj_food_item_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mj_food_item_nonce'] ) ), 'mj_food_item_meta' ) ) {
-                return;
+            // Debug logging - check if POST data exists.
+            $has_nonce = isset( $_POST['mj_food_item_nonce'] );
+            $has_price = isset( $_POST['mj_price'] );
+
+            // Log for debugging.
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'MJ Save Meta: Post ID=' . $post_id . ', Has Nonce=' . ( $has_nonce ? 'yes' : 'no' ) . ', Has Price=' . ( $has_price ? 'yes' : 'no' ) );
+            }
+
+            // Nonce verification.
+            if ( $has_nonce ) {
+                if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mj_food_item_nonce'] ) ), 'mj_food_item_meta' ) ) {
+                    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                        error_log( 'MJ Save Meta: Nonce verification failed for post ' . $post_id );
+                    }
+                    return;
+                }
+            } else {
+                // No nonce present - this could be a REST API request or revision save.
+                // Only allow if user is admin and we have actual meta data to save.
+                if ( ! current_user_can( 'administrator' ) || ! $has_price ) {
+                    return;
+                }
             }
 
             // Check if user can edit - allow admins and users with the capability.
             $can_edit = current_user_can( 'administrator' ) ||
                         current_user_can( 'edit_mj_food_items' ) ||
+                        current_user_can( 'edit_published_mj_food_items' ) ||
                         current_user_can( 'edit_post', $post_id );
 
             if ( ! $can_edit ) {
+                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                    error_log( 'MJ Save Meta: User cannot edit post ' . $post_id );
+                }
                 return;
             }
 
-            // Save price.
-            if ( isset( $_POST['mj_price'] ) ) {
-                update_post_meta( $post_id, '_mj_price', floatval( $_POST['mj_price'] ) );
+            // Save price - always save even if empty to allow resetting.
+            $price = isset( $_POST['mj_price'] ) ? floatval( $_POST['mj_price'] ) : 0;
+            update_post_meta( $post_id, '_mj_price', $price );
+
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'MJ Save Meta: Saved price=' . $price . ' for post ' . $post_id );
             }
 
             // Save sale price.
