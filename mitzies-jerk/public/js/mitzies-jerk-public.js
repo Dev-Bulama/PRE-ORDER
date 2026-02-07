@@ -372,9 +372,17 @@
                             });
                         }
 
-                        // Switch to quantity controls (Uber Eats style)
                         $btn.removeClass('loading').prop('disabled', false);
-                        self.switchToQuantityControls(itemId, quantity, cartKey);
+
+                        // Check if on single view page - show View Cart button
+                        var isSinglePage = $btn.closest('.mj-single-food-item, .mj-single-food-details').length > 0;
+                        if (isSinglePage) {
+                            // Switch to View Cart button on single page
+                            self.switchToViewCartButton($btn);
+                        } else {
+                            // Switch to quantity controls on card/grid (Uber Eats style)
+                            self.switchToQuantityControls(itemId, quantity, cartKey);
+                        }
 
                         // Update cart state
                         self.updateMiniCart(response.data.cart);
@@ -1373,34 +1381,42 @@
 
         /**
          * Initialize Single View Button State
-         * Shows quantity controls on single view page if item is already in cart
+         * Shows "View Cart" button on single view page if item is already in cart
          */
         initSingleViewButtonState: function() {
             var self = this;
-            var $singleBtn = $('.mj-single-food-item .mj-add-to-cart-btn, .mj-single-food-details .mj-add-to-cart-btn').not('.mj-add-to-cart-single');
+            var $singleBtn = $('.mj-single-food-item .mj-add-to-cart-btn, .mj-single-food-details .mj-add-to-cart-btn');
 
             if (!$singleBtn.length) return;
 
-            var itemId = $singleBtn.data('item-id');
+            var itemId = $singleBtn.first().data('item-id');
             if (!itemId) return;
 
             // Check if item is in cart
             var cartItem = this.cartState[itemId];
             if (cartItem && cartItem.quantity > 0) {
-                // Show quantity controls for single page button
-                this.switchToQuantityControls(itemId, cartItem.quantity, cartItem.key);
+                // Change button to "View Cart" link
+                this.switchToViewCartButton($singleBtn);
             }
+        },
 
-            // For the mj-add-to-cart-single button (dedicated single page button),
-            // we just need to make sure it shows correct state after add
-            var $singlePageBtn = $('.mj-add-to-cart-single');
-            if ($singlePageBtn.length && cartItem && cartItem.quantity > 0) {
-                // Update text to show item is in cart
-                var $btnText = $singlePageBtn.find('.mj-btn-text');
-                if ($btnText.length) {
-                    $btnText.text(mitzies_jerk_params.i18n.in_cart || 'In Cart');
-                }
-            }
+        /**
+         * Switch Add to Cart button to View Cart button on single page
+         */
+        switchToViewCartButton: function($btn) {
+            var cartUrl = mitzies_jerk_params.cart_url || '/cart/';
+            var viewCartText = mitzies_jerk_params.i18n.view_cart || 'View Cart';
+
+            $btn.each(function() {
+                var $thisBtn = $(this);
+                // Convert to link styled as button
+                var $link = $('<a></a>')
+                    .attr('href', cartUrl)
+                    .addClass('mj-btn mj-btn-primary mj-view-cart-btn')
+                    .html('<span class="dashicons dashicons-cart"></span> ' + viewCartText);
+
+                $thisBtn.replaceWith($link);
+            });
         },
 
         /**
