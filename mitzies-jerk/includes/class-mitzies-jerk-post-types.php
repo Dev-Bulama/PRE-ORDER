@@ -18,6 +18,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Mitzies_Jerk_Post_Types {
 
     /**
+     * Constructor.
+     */
+    public function __construct() {
+        // Force Classic Editor for food items - Block Editor doesn't work with our meta boxes.
+        add_filter( 'use_block_editor_for_post_type', array( $this, 'disable_gutenberg_for_food_items' ), 10, 2 );
+    }
+
+    /**
+     * Disable Gutenberg (Block Editor) for food items.
+     * Our meta boxes require the Classic Editor to save properly.
+     *
+     * @param bool   $use_block_editor Whether to use the block editor.
+     * @param string $post_type        The post type.
+     * @return bool
+     */
+    public function disable_gutenberg_for_food_items( $use_block_editor, $post_type ) {
+        if ( 'mj_food_item' === $post_type ) {
+            return false;
+        }
+        return $use_block_editor;
+    }
+
+    /**
      * Register all custom post types.
      *
      * @since    1.0.0
@@ -36,29 +59,23 @@ class Mitzies_Jerk_Post_Types {
     private function register_post_meta() {
         // Register meta fields for food items to work with block editor.
         $meta_fields = array(
-            '_mj_price'            => array( 'type' => 'number', 'default' => 0, 'sanitize' => 'floatval' ),
-            '_mj_sale_price'       => array( 'type' => 'string', 'default' => '', 'sanitize' => 'sanitize_text_field' ),
-            '_mj_stock_status'     => array( 'type' => 'string', 'default' => 'instock', 'sanitize' => 'sanitize_text_field' ),
-            '_mj_stock_quantity'   => array( 'type' => 'integer', 'default' => 0, 'sanitize' => 'absint' ),
-            '_mj_is_featured'      => array( 'type' => 'boolean', 'default' => false, 'sanitize' => 'rest_sanitize_boolean' ),
-            '_mj_ingredients'      => array( 'type' => 'string', 'default' => '', 'sanitize' => 'sanitize_textarea_field' ),
-            '_mj_preparation_time' => array( 'type' => 'string', 'default' => '', 'sanitize' => 'sanitize_text_field' ),
-            '_mj_calories'         => array( 'type' => 'string', 'default' => '', 'sanitize' => 'sanitize_text_field' ),
+            '_mj_price'            => array( 'type' => 'number', 'default' => 0 ),
+            '_mj_sale_price'       => array( 'type' => 'string', 'default' => '' ),
+            '_mj_stock_status'     => array( 'type' => 'string', 'default' => 'instock' ),
+            '_mj_stock_quantity'   => array( 'type' => 'integer', 'default' => 0 ),
+            '_mj_is_featured'      => array( 'type' => 'boolean', 'default' => false ),
+            '_mj_ingredients'      => array( 'type' => 'string', 'default' => '' ),
+            '_mj_preparation_time' => array( 'type' => 'string', 'default' => '' ),
+            '_mj_calories'         => array( 'type' => 'string', 'default' => '' ),
         );
 
         foreach ( $meta_fields as $meta_key => $args ) {
             register_post_meta( 'mj_food_item', $meta_key, array(
-                'show_in_rest'      => true,
-                'single'            => true,
-                'type'              => $args['type'],
-                'default'           => $args['default'],
-                'sanitize_callback' => $args['sanitize'],
-                'auth_callback'     => function() {
-                    // Allow admins and users with food item editing capability.
-                    return current_user_can( 'administrator' ) ||
-                           current_user_can( 'edit_mj_food_items' ) ||
-                           current_user_can( 'edit_published_mj_food_items' );
-                },
+                'show_in_rest'  => true,
+                'single'        => true,
+                'type'          => $args['type'],
+                'default'       => $args['default'],
+                'auth_callback' => '__return_true',
             ) );
         }
     }
@@ -117,23 +134,6 @@ class Mitzies_Jerk_Post_Types {
         );
 
         register_post_type( 'mj_food_item', $args );
-
-        // Use Classic Editor for food items to ensure meta boxes save correctly.
-        add_filter( 'use_block_editor_for_post_type', array( $this, 'disable_gutenberg_for_food_items' ), 10, 2 );
-    }
-
-    /**
-     * Disable Gutenberg for food items to ensure meta boxes work correctly.
-     *
-     * @param bool   $use_block_editor Whether to use block editor.
-     * @param string $post_type        Post type.
-     * @return bool
-     */
-    public function disable_gutenberg_for_food_items( $use_block_editor, $post_type ) {
-        if ( 'mj_food_item' === $post_type ) {
-            return false;
-        }
-        return $use_block_editor;
     }
 
     /**
