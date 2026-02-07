@@ -293,33 +293,187 @@ class Mitzies_Jerk_Ajax {
         $email = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 
         if ( ! $order_number ) {
-            wp_send_json_error( __( 'Please enter your order number.', 'mitzies-jerk' ) );
+            wp_send_json_error( array( 'message' => __( 'Please enter your order number.', 'mitzies-jerk' ) ) );
         }
 
         $order = Mitzies_Jerk_Order::get_by_order_number( $order_number );
 
         if ( ! $order ) {
-            wp_send_json_error( __( 'Order not found.', 'mitzies-jerk' ) );
+            wp_send_json_error( array( 'message' => __( 'Order not found. Please check your order number and try again.', 'mitzies-jerk' ) ) );
         }
 
         // Verify email if provided.
+        $billing = $order->get( 'billing' );
         if ( $email ) {
-            $billing = $order->get( 'billing' );
             if ( strtolower( $billing['email'] ) !== strtolower( $email ) ) {
-                wp_send_json_error( __( 'Email does not match order.', 'mitzies-jerk' ) );
+                wp_send_json_error( array( 'message' => __( 'Email does not match the order. Please verify your email address.', 'mitzies-jerk' ) ) );
             }
         }
 
         $statuses = mitzies_jerk_get_order_statuses();
         $current_status = $order->get( 'status' );
+        $status_label = isset( $statuses[ $current_status ] ) ? $statuses[ $current_status ] : $current_status;
+        $delivery_datetime = $order->get( 'delivery_datetime' );
+        $created_at = $order->get( 'created_at' );
+        $total = $order->get( 'total' );
+        $items = $order->get_items();
+        $delivery = $order->get( 'delivery' );
+        $payment_method = $order->get( 'payment_method' );
+
+        // Define status order for progress tracking.
+        $status_order = array( 'mj-pending', 'mj-paid', 'mj-processing', 'mj-preparing', 'mj-ready', 'mj-delivering', 'mj-completed' );
+        $current_index = array_search( $current_status, $status_order );
+        if ( false === $current_index ) {
+            $current_index = -1; // For cancelled/refunded/failed.
+        }
+
+        // Build HTML response.
+        ob_start();
+        ?>
+        <div class="mj-tracking-result-content">
+            <div class="mj-tracking-header">
+                <div class="mj-tracking-order-info">
+                    <h3><?php esc_html_e( 'Order', 'mitzies-jerk' ); ?> #<?php echo esc_html( $order->get( 'order_number' ) ); ?></h3>
+                    <span class="mj-tracking-status mj-status-<?php echo esc_attr( $current_status ); ?>">
+                        <?php echo esc_html( $status_label ); ?>
+                    </span>
+                </div>
+                <div class="mj-tracking-date">
+                    <?php esc_html_e( 'Placed on', 'mitzies-jerk' ); ?>
+                    <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $created_at ) ) ); ?>
+                </div>
+            </div>
+
+            <?php if ( ! in_array( $current_status, array( 'mj-cancelled', 'mj-refunded', 'mj-failed', 'mj-expired' ), true ) ) : ?>
+            <div class="mj-tracking-progress">
+                <div class="mj-progress-bar">
+                    <?php
+                    $display_statuses = array(
+                        'mj-pending'    => __( 'Pending', 'mitzies-jerk' ),
+                        'mj-paid'       => __( 'Paid', 'mitzies-jerk' ),
+                        'mj-preparing'  => __( 'Preparing', 'mitzies-jerk' ),
+                        'mj-ready'      => __( 'Ready', 'mitzies-jerk' ),
+                        'mj-delivering' => __( 'Delivering', 'mitzies-jerk' ),
+                        'mj-completed'  => __( 'Completed', 'mitzies-jerk' ),
+                    );
+                    $step = 0;
+                    foreach ( $display_statuses as $status_key => $status_name ) :
+                        $step++;
+                        $status_index = array_search( $status_key, $status_order );
+                        $is_completed = $status_index !== false && $current_index >= $status_index;
+                        $is_current = $status_key === $current_status;
+                    ?>
+                        <div class="mj-progress-step <?php echo $is_completed ? 'completed' : ''; ?> <?php echo $is_current ? 'current' : ''; ?>">
+                            <div class="mj-step-icon">
+                                <?php if ( $is_completed && ! $is_current ) : ?>
+                                    <span class="dashicons dashicons-yes"></span>
+                                <?php else : ?>
+                                    <span class="step-number"><?php echo esc_html( $step ); ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="mj-step-label"><?php echo esc_html( $status_name ); ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <div class="mj-tracking-details">
+                <div class="mj-tracking-detail-grid">
+                    <div class="mj-tracking-detail-card">
+                        <div class="mj-detail-icon"><span class="dashicons dashicons-calendar-alt"></span></div>
+                        <div class="mj-detail-content">
+                            <span class="mj-detail-label"><?php esc_html_e( 'Delivery Date', 'mitzies-jerk' ); ?></span>
+                            <span class="mj-detail-value">
+                                <?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $delivery_datetime ) ) ); ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mj-tracking-detail-card">
+                        <div class="mj-detail-icon"><span class="dashicons dashicons-money-alt"></span></div>
+                        <div class="mj-detail-content">
+                            <span class="mj-detail-label"><?php esc_html_e( 'Total Amount', 'mitzies-jerk' ); ?></span>
+                            <span class="mj-detail-value"><?php echo esc_html( mitzies_jerk_format_price( $total ) ); ?></span>
+                        </div>
+                    </div>
+
+                    <div class="mj-tracking-detail-card">
+                        <div class="mj-detail-icon"><span class="dashicons dashicons-credit-card"></span></div>
+                        <div class="mj-detail-content">
+                            <span class="mj-detail-label"><?php esc_html_e( 'Payment', 'mitzies-jerk' ); ?></span>
+                            <span class="mj-detail-value"><?php echo esc_html( ucfirst( str_replace( '_', ' ', $payment_method ) ) ); ?></span>
+                        </div>
+                    </div>
+
+                    <div class="mj-tracking-detail-card">
+                        <div class="mj-detail-icon"><span class="dashicons dashicons-location"></span></div>
+                        <div class="mj-detail-content">
+                            <span class="mj-detail-label"><?php esc_html_e( 'Delivery To', 'mitzies-jerk' ); ?></span>
+                            <span class="mj-detail-value">
+                                <?php
+                                if ( ! empty( $delivery['address_1'] ) ) {
+                                    echo esc_html( $delivery['address_1'] );
+                                    if ( ! empty( $delivery['city'] ) ) {
+                                        echo ', ' . esc_html( $delivery['city'] );
+                                    }
+                                } else {
+                                    esc_html_e( 'Not specified', 'mitzies-jerk' );
+                                }
+                                ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if ( ! empty( $items ) ) : ?>
+                <div class="mj-tracking-items">
+                    <h4><?php esc_html_e( 'Order Items', 'mitzies-jerk' ); ?></h4>
+                    <div class="mj-tracking-items-list">
+                        <?php foreach ( $items as $item ) :
+                            $food_item = get_post( $item->food_item_id );
+                            $thumbnail = get_the_post_thumbnail_url( $item->food_item_id, 'thumbnail' );
+                        ?>
+                        <div class="mj-tracking-item">
+                            <?php if ( $thumbnail ) : ?>
+                                <img src="<?php echo esc_url( $thumbnail ); ?>" alt="<?php echo esc_attr( $food_item ? $food_item->post_title : '' ); ?>" class="mj-tracking-item-img">
+                            <?php else : ?>
+                                <div class="mj-tracking-item-img mj-no-img"><span class="dashicons dashicons-food"></span></div>
+                            <?php endif; ?>
+                            <div class="mj-tracking-item-info">
+                                <span class="mj-tracking-item-name">
+                                    <?php echo $food_item ? esc_html( $food_item->post_title ) : esc_html__( 'Item', 'mitzies-jerk' ); ?>
+                                </span>
+                                <span class="mj-tracking-item-qty">x<?php echo esc_html( $item->quantity ); ?></span>
+                            </div>
+                            <div class="mj-tracking-item-price">
+                                <?php echo esc_html( mitzies_jerk_format_price( $item->subtotal ) ); ?>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <div class="mj-tracking-contact">
+                    <p>
+                        <span class="dashicons dashicons-phone"></span>
+                        <?php esc_html_e( 'Need help? Contact us for assistance with your order.', 'mitzies-jerk' ); ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <?php
+        $html = ob_get_clean();
 
         wp_send_json_success( array(
+            'html'              => $html,
             'order_number'      => $order->get( 'order_number' ),
             'status'            => $current_status,
-            'status_label'      => isset( $statuses[ $current_status ] ) ? $statuses[ $current_status ] : $current_status,
-            'delivery_datetime' => $order->get( 'delivery_datetime' ),
-            'total'             => mitzies_jerk_format_price( $order->get( 'total' ) ),
-            'created_at'        => $order->get( 'created_at' ),
+            'status_label'      => $status_label,
+            'delivery_datetime' => $delivery_datetime,
+            'total'             => mitzies_jerk_format_price( $total ),
+            'created_at'        => $created_at,
         ) );
     }
 
