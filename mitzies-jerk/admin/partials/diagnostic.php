@@ -154,6 +154,57 @@ $diagnostics['food_items'] = array(
     'message' => $total_items > 0 ? __( 'Food items exist in the database', 'mitzies-jerk' ) : __( 'No food items found. Add some food items.', 'mitzies-jerk' ),
 );
 
+// Check 8b: Food Items Price Data
+$items_with_price = 0;
+$items_without_price = 0;
+$sample_items_debug = array();
+
+$food_items = get_posts( array(
+    'post_type'      => 'mj_food_item',
+    'posts_per_page' => 10,
+    'post_status'    => 'publish',
+) );
+
+foreach ( $food_items as $item ) {
+    $price = get_post_meta( $item->ID, '_mj_price', true );
+    if ( ! empty( $price ) && $price > 0 ) {
+        $items_with_price++;
+    } else {
+        $items_without_price++;
+    }
+    if ( count( $sample_items_debug ) < 5 ) {
+        $sample_items_debug[] = array(
+            'id'    => $item->ID,
+            'title' => $item->post_title,
+            'price' => $price,
+        );
+    }
+}
+
+$price_status = $items_without_price > 0 ? 'warning' : 'pass';
+$price_value = sprintf( __( '%d with price, %d without', 'mitzies-jerk' ), $items_with_price, $items_without_price );
+
+$diagnostics['food_prices'] = array(
+    'label'   => __( 'Food Item Prices', 'mitzies-jerk' ),
+    'value'   => $price_value,
+    'status'  => $price_status,
+    'message' => $items_without_price > 0 ? __( 'Some items are missing prices. Edit and save each item.', 'mitzies-jerk' ) : __( 'All items have prices set', 'mitzies-jerk' ),
+);
+
+// Check 8c: Classic Editor Status
+$using_classic = false;
+$post_types = new Mitzies_Jerk_Post_Types();
+if ( method_exists( $post_types, 'disable_gutenberg_for_food_items' ) ) {
+    $using_classic = ! $post_types->disable_gutenberg_for_food_items( true, 'mj_food_item' );
+}
+
+$diagnostics['editor_mode'] = array(
+    'label'   => __( 'Food Item Editor', 'mitzies-jerk' ),
+    'value'   => $using_classic ? __( 'Classic Editor (Required)', 'mitzies-jerk' ) : __( 'Block Editor', 'mitzies-jerk' ),
+    'status'  => $using_classic ? 'pass' : 'warning',
+    'message' => $using_classic ? __( 'Using Classic Editor for proper meta box support', 'mitzies-jerk' ) : __( 'Block Editor may cause issues with saving', 'mitzies-jerk' ),
+);
+
 // Check 9: Payment Gateways
 $enabled_gateways = mitzies_jerk_get_option( 'enabled_gateways', array() );
 
@@ -457,6 +508,90 @@ if ( isset( $_POST['mj_ajax_test'] ) && wp_verify_nonce( $_POST['mj_ajax_test_no
                         <td><code>[mitzies_jerk_mini_cart]</code></td>
                     </tr>
                 </table>
+            </div>
+        </div>
+
+        <!-- Food Item Debug Info -->
+        <div class="mj-card">
+            <div class="mj-card-header">
+                <h2><span class="dashicons dashicons-database"></span> <?php esc_html_e( 'Food Item Data Debug', 'mitzies-jerk' ); ?></h2>
+            </div>
+            <div class="mj-card-body">
+                <p><?php esc_html_e( 'Shows raw data for recent food items to help debug price/addon issues:', 'mitzies-jerk' ); ?></p>
+                <table class="widefat striped">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'ID', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Title', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Price (raw)', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Sale Price', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Addons', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Formatted', 'mitzies-jerk' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $debug_items = get_posts( array(
+                            'post_type'      => 'mj_food_item',
+                            'posts_per_page' => 10,
+                            'post_status'    => 'publish',
+                            'orderby'        => 'modified',
+                            'order'          => 'DESC',
+                        ) );
+
+                        if ( empty( $debug_items ) ) :
+                            ?>
+                            <tr>
+                                <td colspan="6"><?php esc_html_e( 'No food items found.', 'mitzies-jerk' ); ?></td>
+                            </tr>
+                            <?php
+                        else :
+                            foreach ( $debug_items as $debug_item ) :
+                                $item_price = get_post_meta( $debug_item->ID, '_mj_price', true );
+                                $item_sale_price = get_post_meta( $debug_item->ID, '_mj_sale_price', true );
+                                $item_addons = Mitzies_Jerk_Database::get_food_addons( $debug_item->ID );
+                                $addon_count = count( $item_addons );
+                                $formatted_price = mitzies_jerk_format_price( $item_price );
+                                $price_class = ( empty( $item_price ) || $item_price == 0 ) ? 'color: red; font-weight: bold;' : 'color: green;';
+                                ?>
+                                <tr>
+                                    <td><?php echo esc_html( $debug_item->ID ); ?></td>
+                                    <td>
+                                        <a href="<?php echo esc_url( get_edit_post_link( $debug_item->ID ) ); ?>">
+                                            <?php echo esc_html( $debug_item->post_title ); ?>
+                                        </a>
+                                    </td>
+                                    <td style="<?php echo esc_attr( $price_class ); ?>">
+                                        <?php echo esc_html( var_export( $item_price, true ) ); ?>
+                                    </td>
+                                    <td><?php echo esc_html( var_export( $item_sale_price, true ) ); ?></td>
+                                    <td>
+                                        <?php
+                                        if ( $addon_count > 0 ) {
+                                            echo '<span style="color: green;">' . esc_html( $addon_count ) . ' addon(s)</span><br>';
+                                            foreach ( $item_addons as $addon ) {
+                                                echo esc_html( $addon->addon_name ) . ': ' . esc_html( mitzies_jerk_format_price( $addon->addon_price ) ) . '<br>';
+                                            }
+                                        } else {
+                                            echo '<span style="color: orange;">None</span>';
+                                        }
+                                        ?>
+                                    </td>
+                                    <td><?php echo esc_html( $formatted_price ); ?></td>
+                                </tr>
+                                <?php
+                            endforeach;
+                        endif;
+                        ?>
+                    </tbody>
+                </table>
+                <p class="description" style="margin-top: 15px;">
+                    <strong><?php esc_html_e( 'Debug Tips:', 'mitzies-jerk' ); ?></strong><br>
+                    <?php esc_html_e( '- Price should be a number (e.g., 18.99)', 'mitzies-jerk' ); ?><br>
+                    <?php esc_html_e( '- Empty or 0 prices will show as red', 'mitzies-jerk' ); ?><br>
+                    <?php esc_html_e( '- If prices are not saving, edit the item and click Update', 'mitzies-jerk' ); ?><br>
+                    <?php esc_html_e( '- Classic Editor is now enforced for food items', 'mitzies-jerk' ); ?>
+                </p>
             </div>
         </div>
 
