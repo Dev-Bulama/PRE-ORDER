@@ -3789,3 +3789,38 @@
     font-weight: 500;
     font-size: 13px;
 }
+
+/* ==========================================================================
+   View Cart Button (Single Page)
+   ========================================================================== */
+
+.mj-view-cart-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 15px 30px;
+    background: var(--mj-success);
+    color: var(--mj-white);
+    border: none;
+    border-radius: var(--mj-border-radius);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: var(--mj-transition);
+}
+
+.mj-view-cart-btn:hover {
+    background: #219a52;
+    color: var(--mj-white);
+    transform: translateY(-2px);
+    box-shadow: var(--mj-box-shadow);
+}
+
+.mj-view-cart-btn .dashicons {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
