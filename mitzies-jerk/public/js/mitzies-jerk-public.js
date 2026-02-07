@@ -29,6 +29,8 @@
             this.initPaymentMethods();
             this.initQuantityControls();
             this.updateAllButtonStates();
+            this.initCardAddonPriceUpdate();
+            this.initSingleViewButtonState();
         },
 
         /**
@@ -110,6 +112,12 @@
                     $('.mj-mini-cart-dropdown').removeClass('active');
                 }
             });
+
+            // View button with addon persistence
+            $(document).on('click', '.mj-food-item .mj-view-btn, .mj-food-item .mj-view-details', this.handleViewWithAddons.bind(this));
+
+            // Pre-select addons on single page from URL params
+            this.preSelectAddonsFromUrl();
         },
 
         /**
@@ -807,14 +815,16 @@
 
             var $form = $(e.currentTarget);
             var $btn = $form.find('.mj-tracking-btn');
-            var orderNumber = $form.find('.mj-tracking-input').val().trim();
+            var orderNumber = $form.find('.mj-tracking-input, input[name="order_number"]').val().trim();
+            var email = $form.find('.mj-tracking-email, input[name="email"]').val().trim();
 
             if (!orderNumber) {
-                MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.enter_order_number);
+                MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.enter_order_number || 'Please enter your order number');
                 return;
             }
 
             $btn.addClass('loading').prop('disabled', true);
+            $btn.html('<span class="mj-spinner"></span> ' + (mitzies_jerk_params.i18n.tracking || 'Tracking...'));
 
             $.ajax({
                 url: mitzies_jerk_params.ajax_url,
@@ -822,20 +832,39 @@
                 data: {
                     action: 'mj_track_order',
                     nonce: mitzies_jerk_params.nonce,
-                    order_number: orderNumber
+                    order_number: orderNumber,
+                    email: email
                 },
                 success: function(response) {
                     $btn.removeClass('loading').prop('disabled', false);
+                    $btn.html(mitzies_jerk_params.i18n.track_order || 'Track Order');
 
                     if (response.success) {
-                        $('.mj-tracking-result').html(response.data.html).show();
+                        var $result = $('#mj-tracking-result, .mj-tracking-result');
+                        if (response.data.html) {
+                            $result.html(response.data.html).slideDown(300);
+                        } else {
+                            // Fallback if html is not provided
+                            var html = '<div class="mj-tracking-result-content">';
+                            html += '<h3>Order #' + response.data.order_number + '</h3>';
+                            html += '<p><strong>Status:</strong> ' + response.data.status_label + '</p>';
+                            html += '<p><strong>Total:</strong> ' + response.data.total + '</p>';
+                            html += '</div>';
+                            $result.html(html).slideDown(300);
+                        }
+                        // Scroll to results
+                        $('html, body').animate({
+                            scrollTop: $result.offset().top - 50
+                        }, 500);
                     } else {
-                        MitziesJerk.showNotice('error', response.data.message);
+                        var errorMsg = response.data && response.data.message ? response.data.message : (mitzies_jerk_params.i18n.error || 'An error occurred');
+                        MitziesJerk.showNotice('error', errorMsg);
                     }
                 },
                 error: function() {
                     $btn.removeClass('loading').prop('disabled', false);
-                    MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.error);
+                    $btn.html(mitzies_jerk_params.i18n.track_order || 'Track Order');
+                    MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.error || 'An error occurred');
                 }
             });
         },
@@ -1223,6 +1252,154 @@
                 return formattedPrice + currencySymbol;
             } else {
                 return formattedPrice + ' ' + currencySymbol;
+            }
+        },
+
+        /**
+         * Handle View button click with addon persistence
+         * Appends selected addon IDs to the URL when navigating to single view
+         */
+        handleViewWithAddons: function(e) {
+            var $btn = $(e.currentTarget);
+            var $item = $btn.closest('.mj-food-item');
+            var href = $btn.attr('href');
+
+            // Collect selected addons
+            var selectedAddons = [];
+            $item.find('.mj-addon-input:checked').each(function() {
+                var addonId = $(this).data('addon-id');
+                if (addonId) {
+                    selectedAddons.push(addonId);
+                }
+            });
+
+            // If no addons selected, just navigate normally
+            if (selectedAddons.length === 0) {
+                return true; // Allow default navigation
+            }
+
+            // Append addons to URL
+            e.preventDefault();
+            var separator = href.indexOf('?') === -1 ? '?' : '&';
+            var newUrl = href + separator + 'selected_addons=' + selectedAddons.join(',');
+            window.location.href = newUrl;
+        },
+
+        /**
+         * Pre-select addons from URL parameters on single view page
+         */
+        preSelectAddonsFromUrl: function() {
+            // Only run on single food item pages
+            if (!$('.mj-single-food-item, .mj-single-food-details').length) {
+                return;
+            }
+
+            // Get URL parameters
+            var urlParams = new URLSearchParams(window.location.search);
+            var selectedAddons = urlParams.get('selected_addons');
+
+            if (!selectedAddons) {
+                return;
+            }
+
+            // Split addon IDs
+            var addonIds = selectedAddons.split(',');
+
+            // Pre-check the corresponding addon checkboxes
+            addonIds.forEach(function(addonId) {
+                var $checkbox = $('.mj-addon-input[data-addon-id="' + addonId + '"]');
+                if ($checkbox.length) {
+                    $checkbox.prop('checked', true);
+                }
+            });
+
+            // Trigger price update
+            var $container = $('.mj-single-food-item, .mj-single-food-details');
+            if ($container.length) {
+                MitziesJerk.updateDynamicTotal($container);
+            }
+        },
+
+        /**
+         * Initialize Card Addon Price Update
+         * Updates the displayed price on food cards when addons are selected
+         */
+        initCardAddonPriceUpdate: function() {
+            var self = this;
+
+            // Bind to addon checkbox changes on food item cards
+            $(document).on('change', '.mj-food-item .mj-addon-input', function() {
+                var $item = $(this).closest('.mj-food-item');
+                self.updateCardPrice($item);
+            });
+        },
+
+        /**
+         * Update Card Price
+         * Calculates and updates the displayed price on a food card based on selected addons
+         */
+        updateCardPrice: function($item) {
+            var $priceEl = $item.find('.mj-food-price .mj-current-price, .mj-food-price');
+            if (!$priceEl.length) return;
+
+            // Get base price from data attribute or parse from displayed text
+            var basePrice = parseFloat($item.data('base-price')) || 0;
+            if (!basePrice) {
+                // Try to get from the price element
+                var priceText = $priceEl.first().text().replace(/[^0-9.]/g, '');
+                basePrice = parseFloat(priceText) || 0;
+                $item.data('base-price', basePrice);
+            }
+
+            // Calculate addon total
+            var addonTotal = 0;
+            $item.find('.mj-addon-input:checked').each(function() {
+                var addonPrice = parseFloat($(this).data('price')) || 0;
+                addonTotal += addonPrice;
+            });
+
+            var totalPrice = basePrice + addonTotal;
+            var formattedPrice = this.formatPrice(totalPrice);
+
+            // Update the displayed price
+            $priceEl.first().text(formattedPrice);
+
+            // Add visual feedback
+            $priceEl.addClass('mj-price-updated');
+            setTimeout(function() {
+                $priceEl.removeClass('mj-price-updated');
+            }, 300);
+        },
+
+        /**
+         * Initialize Single View Button State
+         * Shows quantity controls on single view page if item is already in cart
+         */
+        initSingleViewButtonState: function() {
+            var self = this;
+            var $singleBtn = $('.mj-single-food-item .mj-add-to-cart-btn, .mj-single-food-details .mj-add-to-cart-btn').not('.mj-add-to-cart-single');
+
+            if (!$singleBtn.length) return;
+
+            var itemId = $singleBtn.data('item-id');
+            if (!itemId) return;
+
+            // Check if item is in cart
+            var cartItem = this.cartState[itemId];
+            if (cartItem && cartItem.quantity > 0) {
+                // Show quantity controls for single page button
+                this.switchToQuantityControls(itemId, cartItem.quantity, cartItem.key);
+            }
+
+            // For the mj-add-to-cart-single button (dedicated single page button),
+            // we just need to make sure it shows correct state after add
+            var $singlePageBtn = $('.mj-add-to-cart-single');
+            if ($singlePageBtn.length && cartItem && cartItem.quantity > 0) {
+                // Update text to show item is in cart
+                var $btnText = $singlePageBtn.find('.mj-btn-text');
+                if ($btnText.length) {
+                    $btnText.text(mitzies_jerk_params.i18n.in_cart || 'In Cart');
+                }
             }
         },
 
