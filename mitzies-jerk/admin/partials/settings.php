@@ -366,6 +366,15 @@ $currencies = array(
             }
             ?>
 
+            <div class="mj-settings-section" style="background: #f0f6fc; border-left: 4px solid #2271b1; padding: 12px 16px; margin-bottom: 20px;">
+                <p style="margin: 0 0 8px;">
+                    <strong><?php esc_html_e( 'Quick Start', 'mitzies-jerk' ); ?></strong> &mdash;
+                    <?php esc_html_e( 'Populate all delivery methods, distance rates, and pickup locations with sample data.', 'mitzies-jerk' ); ?>
+                </p>
+                <button type="button" class="button button-primary" id="mj-populate-demo-data"><?php esc_html_e( 'Populate Demo Data', 'mitzies-jerk' ); ?></button>
+                <span class="description" style="margin-left: 8px;"><?php esc_html_e( 'This will replace any existing rows. Remember to click "Save Changes" after.', 'mitzies-jerk' ); ?></span>
+            </div>
+
             <div class="mj-settings-section">
                 <h2><?php esc_html_e( 'Delivery Methods', 'mitzies-jerk' ); ?></h2>
                 <p class="description"><?php esc_html_e( 'Configure delivery and pickup methods available to customers.', 'mitzies-jerk' ); ?></p>
@@ -985,6 +994,104 @@ jQuery(document).ready(function($) {
     });
     $(document).on('click', '.mj-remove-pickup-location', function() {
         $(this).closest('tr').remove();
+    });
+
+    // Populate demo data for Delivery & Pickup tab.
+    $('#mj-populate-demo-data').on('click', function() {
+        if (!confirm('<?php esc_attr_e( 'This will replace all existing delivery methods, distance rates, and pickup locations with demo data. Continue?', 'mitzies-jerk' ); ?>')) {
+            return;
+        }
+
+        // --- Delivery Methods (5 entries) ---
+        var demoMethods = [
+            { name: 'Standard Delivery', type: 'delivery', base_fee: '5.99', extra_fee: '0', time: '45-60 mins', distance: true },
+            { name: 'Express Delivery', type: 'delivery', base_fee: '12.99', extra_fee: '3.00', time: '20-30 mins', distance: true },
+            { name: 'Store Pickup', type: 'pickup', base_fee: '0', extra_fee: '0', time: '15-20 mins', distance: false },
+            { name: 'Curbside Pickup', type: 'pickup', base_fee: '1.50', extra_fee: '0', time: '15-25 mins', distance: false },
+            { name: 'Locker Pickup', type: 'pickup', base_fee: '2.00', extra_fee: '0', time: '20-30 mins', distance: false }
+        ];
+
+        $('#mj-delivery-methods-table tbody').empty();
+        deliveryMethodIndex = 0;
+        $.each(demoMethods, function(i, m) {
+            var idx = deliveryMethodIndex;
+            var html = '<tr>' +
+                '<td><input type="text" name="mj_delivery_methods[' + idx + '][method_name]" value="' + m.name + '" class="regular-text"></td>' +
+                '<td><select name="mj_delivery_methods[' + idx + '][method_type]"><option value="delivery"' + (m.type === 'delivery' ? ' selected' : '') + '>Delivery</option><option value="pickup"' + (m.type === 'pickup' ? ' selected' : '') + '>Pickup</option></select></td>' +
+                '<td><input type="number" name="mj_delivery_methods[' + idx + '][base_fee]" value="' + m.base_fee + '" step="0.01" min="0" class="small-text"></td>' +
+                '<td><input type="number" name="mj_delivery_methods[' + idx + '][extra_fee]" value="' + m.extra_fee + '" step="0.01" min="0" class="small-text"></td>' +
+                '<td><input type="text" name="mj_delivery_methods[' + idx + '][estimated_time]" value="' + m.time + '" class="small-text"></td>' +
+                '<td><input type="checkbox" name="mj_delivery_methods[' + idx + '][is_distance_based]" value="1"' + (m.distance ? ' checked' : '') + '></td>' +
+                '<td><select name="mj_delivery_methods[' + idx + '][status]"><option value="active" selected>Active</option><option value="inactive">Inactive</option></select></td>' +
+                '<td><input type="hidden" name="mj_delivery_methods[' + idx + '][id]" value="0"><input type="hidden" name="mj_delivery_methods[' + idx + '][sort_order]" value="' + idx + '"><button type="button" class="button mj-remove-delivery-method">&times;</button></td>' +
+                '</tr>';
+            $('#mj-delivery-methods-table tbody').append(html);
+            deliveryMethodIndex++;
+        });
+
+        // --- Distance Rate Tiers (5 entries) ---
+        var demoRates = [
+            { min: '0', max: '3', fee: '3.99', time: '15-25 mins' },
+            { min: '3', max: '7', fee: '5.99', time: '25-35 mins' },
+            { min: '7', max: '12', fee: '8.99', time: '35-45 mins' },
+            { min: '12', max: '20', fee: '12.99', time: '45-60 mins' },
+            { min: '20', max: '35', fee: '18.99', time: '60-90 mins' }
+        ];
+
+        $('#mj-distance-rates-table tbody').empty();
+        distanceRateIndex = 0;
+        $.each(demoRates, function(i, r) {
+            var idx = distanceRateIndex;
+            var html = '<tr>' +
+                '<td><input type="number" name="mj_distance_rates[' + idx + '][min_distance]" value="' + r.min + '" step="0.1" min="0" class="small-text"></td>' +
+                '<td><input type="number" name="mj_distance_rates[' + idx + '][max_distance]" value="' + r.max + '" step="0.1" min="0" class="small-text"></td>' +
+                '<td><input type="number" name="mj_distance_rates[' + idx + '][delivery_fee]" value="' + r.fee + '" step="0.01" min="0" class="small-text"></td>' +
+                '<td><input type="text" name="mj_distance_rates[' + idx + '][estimated_time]" value="' + r.time + '" class="small-text"></td>' +
+                '<td><select name="mj_distance_rates[' + idx + '][status]"><option value="active" selected>Active</option><option value="inactive">Inactive</option></select></td>' +
+                '<td><input type="hidden" name="mj_distance_rates[' + idx + '][id]" value="0"><button type="button" class="button mj-remove-distance-rate">&times;</button></td>' +
+                '</tr>';
+            $('#mj-distance-rates-table tbody').append(html);
+            distanceRateIndex++;
+        });
+
+        // --- Pickup Locations (5 entries) ---
+        var demoLocations = [
+            { name: 'Mitzies Downtown', address: '125 Queen Street West', city: 'Toronto', hours: 'Mon-Sun 10AM-10PM', phone: '(416) 555-0101' },
+            { name: 'Mitzies Scarborough', address: '3401 Lawrence Ave East, Unit 12', city: 'Scarborough', hours: 'Mon-Sat 11AM-9PM', phone: '(416) 555-0202' },
+            { name: 'Mitzies Brampton', address: '9980 Airport Road, Unit 5', city: 'Brampton', hours: 'Tue-Sun 11AM-8PM', phone: '(905) 555-0303' },
+            { name: 'Mitzies Mississauga', address: '2155 Burnhamthorpe Road West', city: 'Mississauga', hours: 'Mon-Sun 10AM-9PM', phone: '(905) 555-0404' },
+            { name: 'Mitzies North York', address: '5000 Yonge Street, Unit 201', city: 'North York', hours: 'Wed-Mon 11AM-10PM', phone: '(416) 555-0505' }
+        ];
+
+        $('#mj-pickup-locations-table tbody').empty();
+        pickupLocationIndex = 0;
+        $.each(demoLocations, function(i, loc) {
+            var idx = pickupLocationIndex;
+            var html = '<tr>' +
+                '<td><input type="text" name="mj_pickup_locations[' + idx + '][location_name]" value="' + loc.name + '" class="regular-text"></td>' +
+                '<td><input type="text" name="mj_pickup_locations[' + idx + '][address]" value="' + loc.address + '" class="regular-text"></td>' +
+                '<td><input type="text" name="mj_pickup_locations[' + idx + '][city]" value="' + loc.city + '" class="small-text"></td>' +
+                '<td><input type="text" name="mj_pickup_locations[' + idx + '][availability_hours]" value="' + loc.hours + '" class="regular-text"></td>' +
+                '<td><input type="text" name="mj_pickup_locations[' + idx + '][phone]" value="' + loc.phone + '" class="small-text"></td>' +
+                '<td><select name="mj_pickup_locations[' + idx + '][status]"><option value="active" selected>Active</option><option value="inactive">Inactive</option></select></td>' +
+                '<td><input type="hidden" name="mj_pickup_locations[' + idx + '][id]" value="0"><button type="button" class="button mj-remove-pickup-location">&times;</button></td>' +
+                '</tr>';
+            $('#mj-pickup-locations-table tbody').append(html);
+            pickupLocationIndex++;
+        });
+
+        // Also populate store address fields.
+        $('#store_address').val('125 Queen Street West, Toronto, ON M5H 2M9, Canada');
+        $('input[name="mitzies_jerk_settings[store_latitude]"]').val('43.650570');
+        $('input[name="mitzies_jerk_settings[store_longitude]"]').val('-79.383160');
+        $('input[name="mitzies_jerk_settings[enable_distance_rates]"]').prop('checked', true);
+
+        // Flash confirmation.
+        var $btn = $(this);
+        $btn.text('<?php esc_attr_e( 'Demo data populated!', 'mitzies-jerk' ); ?>').css('background', '#00a32a').css('border-color', '#00a32a');
+        setTimeout(function() {
+            $btn.text('<?php esc_attr_e( 'Populate Demo Data', 'mitzies-jerk' ); ?>').css('background', '').css('border-color', '');
+        }, 2000);
     });
 
     // Send test email.
