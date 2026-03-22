@@ -121,6 +121,7 @@ class Mitzies_Jerk {
         require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-flutterwave.php';
         require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-stripe.php';
         require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-paypal.php';
+        require_once MITZIES_JERK_PATH . 'includes/payment-gateways/class-mitzies-jerk-gateway-square.php';
 
         // Email system.
         require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-emails.php';
@@ -292,6 +293,12 @@ class Mitzies_Jerk {
         $this->loader->add_action( 'wp_ajax_nopriv_mj_process_checkout', $ajax, 'process_checkout' );
         $this->loader->add_action( 'wp_ajax_mj_validate_delivery', $ajax, 'validate_delivery' );
         $this->loader->add_action( 'wp_ajax_nopriv_mj_validate_delivery', $ajax, 'validate_delivery' );
+
+        // Delivery methods & pricing AJAX.
+        $this->loader->add_action( 'wp_ajax_mj_calculate_delivery_fee', $ajax, 'calculate_delivery_fee' );
+        $this->loader->add_action( 'wp_ajax_nopriv_mj_calculate_delivery_fee', $ajax, 'calculate_delivery_fee' );
+        $this->loader->add_action( 'wp_ajax_mj_get_delivery_methods', $ajax, 'get_delivery_methods' );
+        $this->loader->add_action( 'wp_ajax_nopriv_mj_get_delivery_methods', $ajax, 'get_delivery_methods' );
 
         // Payment callbacks.
         $this->loader->add_action( 'wp_ajax_mj_payment_callback', $ajax, 'payment_callback' );

@@ -340,9 +340,13 @@ class Mitzies_Jerk_Checkout {
         // Get cart totals.
         $totals = $cart->get_totals();
 
+        // Determine initial order status based on auto-approval setting.
+        $auto_approve = mitzies_jerk_get_option( 'order_auto_approve', false );
+        $initial_status = $auto_approve ? 'processing' : 'pending';
+
         $order_data = array(
             'user_id'           => $user_id,
-            'status'            => 'pending',
+            'status'            => $initial_status,
             'payment_method'    => sanitize_text_field( $posted_data['payment_method'] ),
             'subtotal'          => $totals['subtotal'],
             'addon_total'       => $totals['addon_total'],
@@ -360,12 +364,15 @@ class Mitzies_Jerk_Checkout {
                 'phone'      => sanitize_text_field( $posted_data['phone'] ?? '' ),
             ),
             'delivery'          => array(
-                'address_1'    => sanitize_text_field( $posted_data['address_1'] ?? '' ),
-                'address_2'    => sanitize_text_field( $posted_data['address_2'] ?? '' ),
-                'city'         => sanitize_text_field( $posted_data['city'] ?? '' ),
-                'state'        => sanitize_text_field( $posted_data['state'] ?? '' ),
-                'postcode'     => sanitize_text_field( $posted_data['postcode'] ?? '' ),
-                'instructions' => sanitize_textarea_field( $posted_data['instructions'] ?? '' ),
+                'address_1'        => sanitize_text_field( $posted_data['address_1'] ?? '' ),
+                'address_2'        => sanitize_text_field( $posted_data['address_2'] ?? '' ),
+                'city'             => sanitize_text_field( $posted_data['city'] ?? '' ),
+                'state'            => sanitize_text_field( $posted_data['state'] ?? '' ),
+                'postcode'         => sanitize_text_field( $posted_data['postcode'] ?? '' ),
+                'instructions'     => sanitize_textarea_field( $posted_data['instructions'] ?? '' ),
+                'delivery_method'  => sanitize_text_field( $posted_data['delivery_method'] ?? '' ),
+                'pickup_method'    => sanitize_text_field( $posted_data['pickup_method'] ?? '' ),
+                'pickup_location'  => sanitize_text_field( $posted_data['pickup_location'] ?? '' ),
             ),
             'items'             => $cart->get_cart_contents(),
             'ip_address'        => $this->get_client_ip(),
@@ -487,6 +494,12 @@ class Mitzies_Jerk_Checkout {
                 'description' => __( 'Pay with PayPal', 'mitzies-jerk' ),
                 'icon'        => '',
                 'icon_class'  => 'dashicons-paypal',
+            ),
+            'square'      => array(
+                'title'       => __( 'Square', 'mitzies-jerk' ),
+                'description' => __( 'Pay with Credit/Debit Card, Apple Pay, or Google Pay via Square', 'mitzies-jerk' ),
+                'icon'        => '',
+                'icon_class'  => 'dashicons-credit-card',
             ),
         );
 

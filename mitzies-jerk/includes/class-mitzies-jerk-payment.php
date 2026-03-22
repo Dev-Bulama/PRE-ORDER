@@ -46,6 +46,7 @@ class Mitzies_Jerk_Payment {
             'flutterwave'   => new Mitzies_Jerk_Gateway_Flutterwave(),
             'stripe'        => new Mitzies_Jerk_Gateway_Stripe(),
             'paypal'        => new Mitzies_Jerk_Gateway_PayPal(),
+            'square'        => new Mitzies_Jerk_Gateway_Square(),
         );
 
         /**

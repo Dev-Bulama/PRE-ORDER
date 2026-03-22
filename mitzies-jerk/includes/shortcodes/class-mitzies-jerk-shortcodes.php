@@ -258,7 +258,9 @@ class Mitzies_Jerk_Shortcodes {
                         <?php echo esc_html( mitzies_jerk_format_price( $price ) ); ?>
                     <?php endif; ?>
                 </div>
-                <?php if ( ! empty( $addons ) ) : ?>
+                <?php
+                $show_addons_on_thumbnail = mitzies_jerk_get_option( 'show_addons_on_thumbnail', true );
+                if ( ! empty( $addons ) && $show_addons_on_thumbnail ) : ?>
                     <div class="mj-food-addons">
                         <span class="mj-addons-label"><?php esc_html_e( 'Available Add-ons:', 'mitzies-jerk' ); ?></span>
                         <div class="mj-addons-list">
@@ -514,8 +516,16 @@ class Mitzies_Jerk_Shortcodes {
                             </div>
                         </div>
 
-                        <!-- Delivery Details -->
+                        <!-- Delivery Method Selection -->
                         <div class="mj-checkout-section">
+                            <h3><?php esc_html_e( 'Delivery Method', 'mitzies-jerk' ); ?></h3>
+                            <div class="mj-delivery-methods-container">
+                                <p class="mj-loading"><?php esc_html_e( 'Loading delivery options...', 'mitzies-jerk' ); ?></p>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Details -->
+                        <div class="mj-checkout-section mj-delivery-address-section">
                             <h3><?php esc_html_e( 'Delivery Details', 'mitzies-jerk' ); ?></h3>
                             <div class="mj-form-row">
                                 <div class="mj-form-group">
@@ -625,7 +635,7 @@ class Mitzies_Jerk_Shortcodes {
                             <div class="mj-order-totals">
                                 <div class="mj-total-row">
                                     <span><?php esc_html_e( 'Subtotal', 'mitzies-jerk' ); ?></span>
-                                    <span><?php echo esc_html( mitzies_jerk_format_price( $cart['subtotal'] + $cart['addon_total'] ) ); ?></span>
+                                    <span class="mj-checkout-subtotal" data-amount="<?php echo esc_attr( $cart['subtotal'] + $cart['addon_total'] ); ?>"><?php echo esc_html( mitzies_jerk_format_price( $cart['subtotal'] + $cart['addon_total'] ) ); ?></span>
                                 </div>
                                 <?php if ( $cart['discount'] > 0 ) : ?>
                                     <div class="mj-total-row discount">
@@ -635,7 +645,7 @@ class Mitzies_Jerk_Shortcodes {
                                 <?php endif; ?>
                                 <div class="mj-total-row">
                                     <span><?php esc_html_e( 'Delivery', 'mitzies-jerk' ); ?></span>
-                                    <span>
+                                    <span class="mj-delivery-fee-amount" data-amount="<?php echo esc_attr( $cart['delivery_fee'] ); ?>">
                                         <?php echo $cart['delivery_fee'] > 0 ? esc_html( mitzies_jerk_format_price( $cart['delivery_fee'] ) ) : esc_html__( 'Free', 'mitzies-jerk' ); ?>
                                     </span>
                                 </div>
@@ -647,10 +657,10 @@ class Mitzies_Jerk_Shortcodes {
                                 <?php endif; ?>
                                 <div class="mj-total-row total">
                                     <span><?php esc_html_e( 'Total', 'mitzies-jerk' ); ?></span>
-                                    <span><?php echo esc_html( mitzies_jerk_format_price( $cart['total'] ) ); ?></span>
+                                    <span class="mj-checkout-total-amount" data-amount="<?php echo esc_attr( $cart['total'] ); ?>"><?php echo esc_html( mitzies_jerk_format_price( $cart['total'] ) ); ?></span>
                                 </div>
                             </div>
-                            <button type="submit" class="mj-btn mj-btn-primary mj-btn-block mj-place-order">
+                            <button type="submit" class="mj-btn mj-btn-primary mj-btn-block mj-place-order mj-place-order-btn">
                                 <?php esc_html_e( 'Place Order', 'mitzies-jerk' ); ?>
                             </button>
                             <p class="mj-terms-notice">

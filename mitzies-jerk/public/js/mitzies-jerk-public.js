@@ -31,6 +31,8 @@
             this.updateAllButtonStates();
             this.initCardAddonPriceUpdate();
             this.initSingleViewButtonState();
+            this.initDeliveryMethods();
+            this.initOrderTracking();
         },
 
         /**
@@ -728,16 +730,32 @@
                 url: mitzies_jerk_params.ajax_url,
                 type: 'POST',
                 data: formData,
+                timeout: 60000,
                 success: function(response) {
-                    if (response.success) {
+                    if (response.success && response.data) {
                         // Clear local cart state on successful checkout
                         self.cartState = {};
                         localStorage.removeItem('mj_cart_state');
 
+                        // Show success message
+                        MitziesJerk.showNotice('success', response.data.message || mitzies_jerk_params.i18n.order_success || 'Order placed successfully!');
+
+                        // Redirect to appropriate page
                         if (response.data.redirect_url) {
-                            window.location.href = response.data.redirect_url;
+                            setTimeout(function() {
+                                window.location.href = response.data.redirect_url;
+                            }, 500);
                         } else if (response.data.payment_url) {
-                            window.location.href = response.data.payment_url;
+                            setTimeout(function() {
+                                window.location.href = response.data.payment_url;
+                            }, 500);
+                        } else {
+                            // Fallback: redirect to home after delay
+                            $btn.removeClass('loading').prop('disabled', false);
+                            $btn.html(mitzies_jerk_params.i18n.order_success || 'Order Placed!');
+                            setTimeout(function() {
+                                window.location.href = window.location.origin;
+                            }, 2000);
                         }
                     } else {
                         $btn.removeClass('loading').prop('disabled', false);
@@ -754,10 +772,14 @@
                         MitziesJerk.showNotice('error', errorMsg);
                     }
                 },
-                error: function() {
+                error: function(xhr, status, error) {
                     $btn.removeClass('loading').prop('disabled', false);
                     $btn.html(mitzies_jerk_params.i18n.place_order);
-                    MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.error);
+                    if (status === 'timeout') {
+                        MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.timeout || 'Request timed out. Please check your order status before trying again.');
+                    } else {
+                        MitziesJerk.showNotice('error', mitzies_jerk_params.i18n.error);
+                    }
                 }
             });
         },
@@ -1443,6 +1465,271 @@
                     $(this).remove();
                 });
             }, 5000);
+        },
+
+        /**
+         * Initialize delivery methods on checkout page
+         */
+        initDeliveryMethods: function() {
+            if (!$('.mj-checkout-form').length) return;
+
+            var self = this;
+
+            // Load delivery methods on page load.
+            this.loadDeliveryMethods();
+
+            // Recalculate when address changes.
+            $(document).on('change blur', 'input[name="address_1"], input[name="city"], input[name="postcode"]', function() {
+                clearTimeout(self._addressTimer);
+                self._addressTimer = setTimeout(function() {
+                    self.recalculateDeliveryFee();
+                }, 500);
+            });
+
+            // Handle delivery method selection.
+            $(document).on('change', 'input[name="delivery_method"]', function() {
+                var $selected = $(this);
+                var methodType = $selected.data('method-type');
+                var fee = parseFloat($selected.data('fee')) || 0;
+
+                // Show/hide pickup locations.
+                if (methodType === 'pickup') {
+                    $('.mj-pickup-locations-section').show();
+                    $('.mj-delivery-address-section').hide();
+                } else {
+                    $('.mj-pickup-locations-section').hide();
+                    $('.mj-delivery-address-section').show();
+                }
+
+                // Update totals.
+                self.updateDeliveryFee(fee);
+            });
+
+            // Handle pickup location selection.
+            $(document).on('change', 'select[name="pickup_location"]', function() {
+                var locationName = $(this).find(':selected').text();
+                if (locationName) {
+                    $('.mj-selected-pickup-info').html('<strong>' + locationName + '</strong>').show();
+                }
+            });
+        },
+
+        /**
+         * Load available delivery methods
+         */
+        loadDeliveryMethods: function() {
+            var self = this;
+            var $container = $('.mj-delivery-methods-container');
+
+            if (!$container.length) {
+                // Create container if not exists.
+                var $deliverySection = $('.mj-delivery-section, .mj-checkout-delivery');
+                if ($deliverySection.length) {
+                    $deliverySection.prepend('<div class="mj-delivery-methods-container"><p class="mj-loading">' + (mitzies_jerk_params.i18n.loading || 'Loading...') + '</p></div>');
+                    $container = $('.mj-delivery-methods-container');
+                } else {
+                    return;
+                }
+            }
+
+            $.ajax({
+                url: mitzies_jerk_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'mj_get_delivery_methods',
+                    nonce: mitzies_jerk_params.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data.methods) {
+                        self.renderDeliveryMethods(response.data.methods, response.data.locations);
+                    }
+                }
+            });
+        },
+
+        /**
+         * Render delivery method options
+         */
+        renderDeliveryMethods: function(methods, locations) {
+            var $container = $('.mj-delivery-methods-container');
+            if (!$container.length) return;
+
+            var html = '<div class="mj-delivery-method-options">';
+            html += '<h4>' + (mitzies_jerk_params.i18n.select_delivery || 'Select Delivery Method') + '</h4>';
+
+            methods.forEach(function(method, index) {
+                var checked = index === 0 ? 'checked' : '';
+                var icon = method.type === 'pickup' ? '📦' : '🚚';
+                var feeText = parseFloat(method.fee) === 0
+                    ? (mitzies_jerk_params.i18n.free || 'Free')
+                    : method.formatted_fee;
+
+                html += '<label class="mj-delivery-method-option' + (checked ? ' selected' : '') + '">';
+                html += '<input type="radio" name="delivery_method" value="' + method.id + '" ' + checked;
+                html += ' data-fee="' + method.fee + '" data-method-type="' + method.type + '">';
+                html += '<span class="mj-method-icon">' + icon + '</span>';
+                html += '<span class="mj-method-details">';
+                html += '<span class="mj-method-name">' + method.name + '</span>';
+                if (method.estimated_time) {
+                    html += ' <span class="mj-method-time">(' + method.estimated_time + ')</span>';
+                }
+                html += '</span>';
+                html += '<span class="mj-method-price">' + feeText + '</span>';
+                html += '</label>';
+            });
+
+            html += '</div>';
+
+            // Add pickup locations section (hidden by default).
+            if (locations && locations.length > 0) {
+                html += '<div class="mj-pickup-locations-section" style="display:none;">';
+                html += '<h4>' + (mitzies_jerk_params.i18n.select_pickup || 'Select Pickup Location') + '</h4>';
+                html += '<select name="pickup_location" class="mj-pickup-location-select">';
+                html += '<option value="">' + (mitzies_jerk_params.i18n.choose_location || 'Choose a location...') + '</option>';
+                locations.forEach(function(loc) {
+                    html += '<option value="' + loc.id + '">' + loc.location_name + ' - ' + loc.address;
+                    if (loc.availability_hours) {
+                        html += ' (' + loc.availability_hours + ')';
+                    }
+                    html += '</option>';
+                });
+                html += '</select>';
+                html += '<div class="mj-selected-pickup-info" style="display:none;"></div>';
+                html += '</div>';
+            }
+
+            $container.html(html);
+
+            // Highlight selected method.
+            $(document).on('change', 'input[name="delivery_method"]', function() {
+                $('.mj-delivery-method-option').removeClass('selected');
+                $(this).closest('.mj-delivery-method-option').addClass('selected');
+            });
+
+            // Set initial fee from first method.
+            if (methods.length > 0) {
+                this.updateDeliveryFee(methods[0].fee);
+            }
+        },
+
+        /**
+         * Recalculate delivery fee based on address
+         */
+        recalculateDeliveryFee: function() {
+            var address = $('input[name="address_1"]').val();
+            var city = $('input[name="city"]').val();
+            var self = this;
+
+            if (!address || !city) return;
+
+            $.ajax({
+                url: mitzies_jerk_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'mj_calculate_delivery_fee',
+                    nonce: mitzies_jerk_params.nonce,
+                    address: address,
+                    city: city,
+                    delivery_method_id: $('input[name="delivery_method"]:checked').val() || 0
+                },
+                success: function(response) {
+                    if (response.success && response.data.methods) {
+                        // Update method prices.
+                        response.data.methods.forEach(function(method) {
+                            var $radio = $('input[name="delivery_method"][value="' + method.id + '"]');
+                            if ($radio.length) {
+                                $radio.data('fee', method.fee);
+                                var $option = $radio.closest('.mj-delivery-method-option');
+                                var feeText = parseFloat(method.fee) === 0
+                                    ? (mitzies_jerk_params.i18n.free || 'Free')
+                                    : method.formatted_fee;
+                                $option.find('.mj-method-price').text(feeText);
+                                if (method.estimated_time) {
+                                    $option.find('.mj-method-time').text('(' + method.estimated_time + ')');
+                                }
+                            }
+                        });
+
+                        // Update selected method's fee.
+                        var selectedFee = parseFloat($('input[name="delivery_method"]:checked').data('fee')) || 0;
+                        self.updateDeliveryFee(selectedFee);
+
+                        // Show distance info.
+                        if (response.data.distance !== null) {
+                            var distanceText = response.data.distance + ' ' + response.data.distance_unit;
+                            $('.mj-distance-info').remove();
+                            $('.mj-delivery-methods-container').append(
+                                '<p class="mj-distance-info"><small>' +
+                                (mitzies_jerk_params.i18n.distance || 'Distance') + ': ' + distanceText +
+                                '</small></p>'
+                            );
+                        }
+                    }
+                }
+            });
+        },
+
+        /**
+         * Update delivery fee in checkout totals
+         */
+        updateDeliveryFee: function(fee) {
+            fee = parseFloat(fee) || 0;
+            var $feeDisplay = $('.mj-delivery-fee-amount, .mj-checkout-delivery-fee');
+            if ($feeDisplay.length) {
+                var feeText = fee === 0
+                    ? (mitzies_jerk_params.i18n.free || 'Free')
+                    : mitzies_jerk_params.currency_symbol + fee.toFixed(2);
+                $feeDisplay.text(feeText);
+            }
+
+            // Recalculate total.
+            var subtotal = parseFloat($('.mj-checkout-subtotal').data('amount') || $('.mj-checkout-subtotal').text().replace(/[^0-9.]/g, '')) || 0;
+            var discount = parseFloat($('.mj-checkout-discount').data('amount') || 0) || 0;
+            var tax = parseFloat($('.mj-checkout-tax').data('amount') || 0) || 0;
+            var total = subtotal - discount + fee + tax;
+
+            var $totalDisplay = $('.mj-checkout-total-amount, .mj-checkout-total');
+            if ($totalDisplay.length) {
+                $totalDisplay.text(mitzies_jerk_params.currency_symbol + total.toFixed(2));
+            }
+        },
+
+        /**
+         * Initialize real-time order tracking
+         */
+        initOrderTracking: function() {
+            var $trackingResult = $('.mj-tracking-result');
+            if (!$trackingResult.length) return;
+
+            // Auto-refresh tracking every 30 seconds if on tracking page.
+            var orderNumber = $trackingResult.data('order-number');
+            if (orderNumber) {
+                this._trackingInterval = setInterval(function() {
+                    MitziesJerk.refreshTracking(orderNumber);
+                }, 30000);
+            }
+        },
+
+        /**
+         * Refresh order tracking data
+         */
+        refreshTracking: function(orderNumber) {
+            if (!orderNumber) return;
+
+            $.ajax({
+                url: mitzies_jerk_params.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'mj_track_order',
+                    order_number: orderNumber,
+                    nonce: mitzies_jerk_params.nonce
+                },
+                success: function(response) {
+                    if (response.success && response.data.html) {
+                        $('.mj-tracking-result').html(response.data.html);
+                    }
+                }
+            });
         }
     };
 

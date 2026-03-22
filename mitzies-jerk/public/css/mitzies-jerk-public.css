@@ -3824,3 +3824,167 @@
     width: 20px;
     height: 20px;
 }
+
+/* ========================================
+   Delivery Methods Selection
+   ======================================== */
+.mj-delivery-methods-container {
+    margin: 20px 0;
+}
+
+.mj-delivery-method-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mj-delivery-method-options h4 {
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--mj-dark, #333);
+}
+
+.mj-delivery-method-option {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #fff;
+}
+
+.mj-delivery-method-option:hover {
+    border-color: var(--mj-primary, #e74c3c);
+    background: #fff5f5;
+}
+
+.mj-delivery-method-option.selected {
+    border-color: var(--mj-primary, #e74c3c);
+    background: #fff5f5;
+    box-shadow: 0 0 0 1px var(--mj-primary, #e74c3c);
+}
+
+.mj-delivery-method-option input[type="radio"] {
+    margin-right: 12px;
+    accent-color: var(--mj-primary, #e74c3c);
+}
+
+.mj-method-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.mj-method-details {
+    flex: 1;
+}
+
+.mj-method-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--mj-dark, #333);
+}
+
+.mj-method-time {
+    font-size: 13px;
+    color: #777;
+    margin-left: 5px;
+}
+
+.mj-method-price {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--mj-primary, #e74c3c);
+    white-space: nowrap;
+}
+
+/* Pickup Locations */
+.mj-pickup-locations-section {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.mj-pickup-locations-section h4 {
+    margin: 0 0 10px;
+    font-size: 15px;
+}
+
+.mj-pickup-location-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.mj-selected-pickup-info {
+    margin-top: 10px;
+    padding: 10px;
+    background: #e8f5e9;
+    border-radius: 6px;
+    color: #2e7d32;
+}
+
+.mj-distance-info {
+    margin-top: 10px;
+    color: #666;
+}
+
+/* Order Success Notice */
+.mj-notice.success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.mj-notice.error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+/* Order Tracking Auto-refresh Indicator */
+.mj-tracking-live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #28a745;
+    margin-left: 10px;
+}
+
+.mj-tracking-live-dot {
+    width: 8px;
+    height: 8px;
+    background: #28a745;
+    border-radius: 50%;
+    animation: mj-pulse 2s infinite;
+}
+
+@keyframes mj-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .mj-delivery-method-option {
+        flex-wrap: wrap;
+        padding: 12px;
+    }
+    .mj-method-price {
+        width: 100%;
+        text-align: right;
+        margin-top: 5px;
+    }
+}

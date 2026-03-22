@@ -202,7 +202,8 @@ class Mitzies_Jerk_Ajax {
             'first_name', 'last_name', 'email', 'phone',
             'address_1', 'address_2', 'city', 'state', 'postcode',
             'delivery_date', 'delivery_time', 'instructions',
-            'payment_method'
+            'payment_method', 'delivery_method', 'pickup_method',
+            'pickup_location'
         );
 
         foreach ( $fields as $field ) {
@@ -216,11 +217,14 @@ class Mitzies_Jerk_Ajax {
 
         if ( is_wp_error( $result ) ) {
             wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+            return;
         }
 
         // Flatten the response for JS compatibility.
         $response = array(
+            'success'  => true,
             'order_id' => $result['order_id'],
+            'message'  => __( 'Order placed successfully!', 'mitzies-jerk' ),
         );
 
         // Extract redirect URL from payment result.
@@ -230,12 +234,232 @@ class Mitzies_Jerk_Ajax {
             $response['redirect_url'] = $result['payment']['payment_url'];
         }
 
+        // Always provide a fallback redirect URL to the order received page.
+        if ( empty( $response['redirect_url'] ) ) {
+            $order_received_page = get_option( 'mitzies_jerk_order_received_page_id' );
+            if ( $order_received_page ) {
+                $response['redirect_url'] = add_query_arg(
+                    array(
+                        'order_id' => $result['order_id'],
+                    ),
+                    get_permalink( $order_received_page )
+                );
+            } else {
+                $response['redirect_url'] = home_url( '/' );
+            }
+        }
+
         // Include payment result status.
         if ( isset( $result['payment']['result'] ) ) {
             $response['result'] = $result['payment']['result'];
         }
 
         wp_send_json_success( $response );
+    }
+
+    /**
+     * Calculate delivery fee based on address/distance.
+     */
+    public function calculate_delivery_fee() {
+        check_ajax_referer( 'mj_ajax_nonce', 'nonce' );
+
+        $address = isset( $_POST['address'] ) ? sanitize_text_field( wp_unslash( $_POST['address'] ) ) : '';
+        $city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
+        $delivery_method_id = isset( $_POST['delivery_method_id'] ) ? absint( $_POST['delivery_method_id'] ) : 0;
+
+        global $wpdb;
+        $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
+
+        // Get available delivery methods.
+        $methods = $wpdb->get_results(
+            "SELECT * FROM {$prefix}delivery_methods WHERE status = 'active' ORDER BY sort_order ASC"
+        );
+
+        $enable_distance_rates = mitzies_jerk_get_option( 'enable_distance_rates', false );
+        $distance = 0;
+        $distance_calculated = false;
+
+        // Try to calculate distance if enabled.
+        if ( $enable_distance_rates && ! empty( $address ) ) {
+            $distance = $this->calculate_distance( $address . ', ' . $city );
+            if ( $distance > 0 ) {
+                $distance_calculated = true;
+            }
+        }
+
+        // Build response with delivery options and prices.
+        $options = array();
+        $currency_symbol = mitzies_jerk_get_option( 'currency_symbol', '$' );
+
+        foreach ( $methods as $method ) {
+            $fee = floatval( $method->base_fee );
+
+            if ( $method->is_distance_based && $distance_calculated ) {
+                // Get distance-based rate.
+                $rate = $wpdb->get_row( $wpdb->prepare(
+                    "SELECT * FROM {$prefix}distance_rates WHERE min_distance <= %f AND max_distance >= %f AND status = 'active' ORDER BY min_distance ASC LIMIT 1",
+                    $distance,
+                    $distance
+                ) );
+
+                if ( $rate ) {
+                    $fee = floatval( $rate->delivery_fee );
+                }
+
+                // Add extra fee for the method (e.g., express surcharge).
+                $fee += floatval( $method->extra_fee );
+            }
+
+            // Get estimated time.
+            $estimated_time = $method->estimated_time;
+            if ( $method->is_distance_based && $distance_calculated ) {
+                $rate = $wpdb->get_row( $wpdb->prepare(
+                    "SELECT estimated_time FROM {$prefix}distance_rates WHERE min_distance <= %f AND max_distance >= %f AND status = 'active' LIMIT 1",
+                    $distance,
+                    $distance
+                ) );
+                if ( $rate && ! empty( $rate->estimated_time ) ) {
+                    $estimated_time = $rate->estimated_time;
+                }
+            }
+
+            // For pickup methods, get available locations.
+            $locations = array();
+            if ( 'pickup' === $method->method_type ) {
+                $locations = $wpdb->get_results(
+                    "SELECT * FROM {$prefix}pickup_locations WHERE status = 'active' ORDER BY sort_order ASC"
+                );
+            }
+
+            $options[] = array(
+                'id'             => $method->id,
+                'name'           => $method->method_name,
+                'type'           => $method->method_type,
+                'fee'            => $fee,
+                'formatted_fee'  => mitzies_jerk_format_price( $fee ),
+                'estimated_time' => $estimated_time,
+                'locations'      => $locations,
+            );
+        }
+
+        // If no methods configured, fall back to default.
+        if ( empty( $options ) ) {
+            $default_fee = mitzies_jerk_get_option( 'delivery_fee', 5.00 );
+            $options[] = array(
+                'id'             => 0,
+                'name'           => __( 'Standard Delivery', 'mitzies-jerk' ),
+                'type'           => 'delivery',
+                'fee'            => $default_fee,
+                'formatted_fee'  => mitzies_jerk_format_price( $default_fee ),
+                'estimated_time' => '30-45 mins',
+                'locations'      => array(),
+            );
+        }
+
+        wp_send_json_success( array(
+            'methods'     => $options,
+            'distance'    => $distance_calculated ? round( $distance, 2 ) : null,
+            'distance_unit' => mitzies_jerk_get_option( 'distance_unit', 'km' ),
+        ) );
+    }
+
+    /**
+     * Calculate distance between store and customer address.
+     *
+     * @param string $customer_address Customer address string.
+     * @return float Distance in configured units.
+     */
+    private function calculate_distance( $customer_address ) {
+        $api_key = mitzies_jerk_get_option( 'google_maps_api_key', '' );
+        $store_lat = mitzies_jerk_get_option( 'store_latitude', '' );
+        $store_lng = mitzies_jerk_get_option( 'store_longitude', '' );
+        $unit = mitzies_jerk_get_option( 'distance_unit', 'km' );
+
+        // Try Google Maps Distance Matrix API first.
+        if ( ! empty( $api_key ) ) {
+            $store_address = mitzies_jerk_get_option( 'store_address', '' );
+            $origins = ! empty( $store_address ) ? urlencode( $store_address ) : $store_lat . ',' . $store_lng;
+            $destinations = urlencode( $customer_address );
+
+            $url = 'https://maps.googleapis.com/maps/api/distancematrix/json?origins=' . $origins . '&destinations=' . $destinations . '&units=' . ( 'miles' === $unit ? 'imperial' : 'metric' ) . '&key=' . $api_key;
+
+            $response = wp_remote_get( $url, array( 'timeout' => 10 ) );
+
+            if ( ! is_wp_error( $response ) ) {
+                $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+                if ( isset( $body['rows'][0]['elements'][0]['distance']['value'] ) ) {
+                    $distance_meters = $body['rows'][0]['elements'][0]['distance']['value'];
+                    return 'miles' === $unit ? $distance_meters / 1609.34 : $distance_meters / 1000;
+                }
+            }
+        }
+
+        // Fallback: Haversine formula if coordinates are available.
+        if ( ! empty( $store_lat ) && ! empty( $store_lng ) ) {
+            // Try to geocode the customer address using a simple approach.
+            // In production, this would use the Google Geocoding API.
+            return 0;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get delivery methods for checkout.
+     */
+    public function get_delivery_methods() {
+        global $wpdb;
+        $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
+
+        $methods = $wpdb->get_results(
+            "SELECT * FROM {$prefix}delivery_methods WHERE status = 'active' ORDER BY sort_order ASC"
+        );
+
+        $pickup_locations = $wpdb->get_results(
+            "SELECT * FROM {$prefix}pickup_locations WHERE status = 'active' ORDER BY sort_order ASC"
+        );
+
+        // If no methods configured, return defaults.
+        if ( empty( $methods ) ) {
+            $default_fee = mitzies_jerk_get_option( 'delivery_fee', 5.00 );
+            $methods = array(
+                (object) array(
+                    'id'             => 0,
+                    'method_name'    => __( 'Standard Delivery', 'mitzies-jerk' ),
+                    'method_type'    => 'delivery',
+                    'base_fee'       => $default_fee,
+                    'extra_fee'      => 0,
+                    'estimated_time' => '30-45 mins',
+                    'is_distance_based' => 0,
+                    'status'         => 'active',
+                ),
+            );
+        }
+
+        $result = array();
+        foreach ( $methods as $method ) {
+            $item = array(
+                'id'             => $method->id,
+                'name'           => $method->method_name,
+                'type'           => $method->method_type,
+                'fee'            => floatval( $method->base_fee ),
+                'formatted_fee'  => mitzies_jerk_format_price( $method->base_fee ),
+                'estimated_time' => $method->estimated_time,
+                'is_distance_based' => (bool) $method->is_distance_based,
+            );
+
+            if ( 'pickup' === $method->method_type ) {
+                $item['locations'] = $pickup_locations;
+            }
+
+            $result[] = $item;
+        }
+
+        wp_send_json_success( array(
+            'methods'   => $result,
+            'locations' => $pickup_locations,
+        ) );
     }
 
     /**
@@ -641,7 +865,9 @@ class Mitzies_Jerk_Ajax {
                         <?php echo esc_html( mitzies_jerk_format_price( $price ) ); ?>
                     <?php endif; ?>
                 </div>
-                <?php if ( ! empty( $addons ) ) : ?>
+                <?php
+                $show_addons_on_thumbnail = mitzies_jerk_get_option( 'show_addons_on_thumbnail', true );
+                if ( ! empty( $addons ) && $show_addons_on_thumbnail ) : ?>
                     <div class="mj-food-addons">
                         <span class="mj-addons-label"><?php esc_html_e( 'Available Add-ons:', 'mitzies-jerk' ); ?></span>
                         <div class="mj-addons-list">

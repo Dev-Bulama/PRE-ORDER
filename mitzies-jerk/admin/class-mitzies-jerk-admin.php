@@ -298,6 +298,9 @@ class Mitzies_Jerk_Admin {
             update_option( 'mitzies_jerk_checkout_page_id', absint( $_POST['mitzies_jerk_checkout_page_id'] ) );
         }
 
+        // Save delivery methods, distance rates, and pickup locations.
+        $this->save_delivery_settings();
+
         // General settings section.
         add_settings_section(
             'mj_general_section',
@@ -435,6 +438,25 @@ class Mitzies_Jerk_Admin {
         $sanitized['enable_guest_checkout'] = ! empty( $input['enable_guest_checkout'] );
         $sanitized['enable_reviews'] = ! empty( $input['enable_reviews'] );
         $sanitized['review_approval'] = ! empty( $input['review_approval'] );
+        $sanitized['show_addons_on_thumbnail'] = ! empty( $input['show_addons_on_thumbnail'] );
+
+        // Order settings.
+        $sanitized['order_auto_approve'] = ! empty( $input['order_auto_approve'] );
+
+        // Distance-based delivery settings.
+        $sanitized['enable_distance_rates'] = ! empty( $input['enable_distance_rates'] );
+        $sanitized['google_maps_api_key'] = sanitize_text_field( $input['google_maps_api_key'] ?? '' );
+        $sanitized['store_latitude'] = sanitize_text_field( $input['store_latitude'] ?? '' );
+        $sanitized['store_longitude'] = sanitize_text_field( $input['store_longitude'] ?? '' );
+        $sanitized['store_address'] = sanitize_text_field( $input['store_address'] ?? '' );
+        $sanitized['distance_unit'] = sanitize_text_field( $input['distance_unit'] ?? 'km' );
+
+        // Square payment gateway settings.
+        foreach ( $input as $key => $value ) {
+            if ( strpos( $key, 'square_' ) === 0 ) {
+                $sanitized[ $key ] = sanitize_text_field( $value );
+            }
+        }
 
         // Advanced settings.
         $sanitized['enable_logging'] = ! empty( $input['enable_logging'] );
@@ -486,6 +508,123 @@ class Mitzies_Jerk_Admin {
      */
     public function render_section_payment() {
         echo '<p>' . esc_html__( 'Configure payment gateway settings.', 'mitzies-jerk' ) . '</p>';
+    }
+
+    /**
+     * Save delivery methods, distance rates, and pickup locations to custom tables.
+     */
+    private function save_delivery_settings() {
+        // Only run on settings save with correct nonce.
+        if ( ! isset( $_POST['option_page'] ) || 'mitzies_jerk_settings' !== $_POST['option_page'] ) {
+            return;
+        }
+
+        global $wpdb;
+        $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
+
+        // Save delivery methods.
+        if ( isset( $_POST['mj_delivery_methods'] ) && is_array( $_POST['mj_delivery_methods'] ) ) {
+            // Get existing IDs.
+            $existing_ids = $wpdb->get_col( "SELECT id FROM {$prefix}delivery_methods" );
+            $submitted_ids = array();
+
+            foreach ( $_POST['mj_delivery_methods'] as $method ) {
+                $data = array(
+                    'method_name'     => sanitize_text_field( $method['method_name'] ?? '' ),
+                    'method_type'     => sanitize_text_field( $method['method_type'] ?? 'delivery' ),
+                    'base_fee'        => floatval( $method['base_fee'] ?? 0 ),
+                    'extra_fee'       => floatval( $method['extra_fee'] ?? 0 ),
+                    'estimated_time'  => sanitize_text_field( $method['estimated_time'] ?? '' ),
+                    'is_distance_based' => ! empty( $method['is_distance_based'] ) ? 1 : 0,
+                    'status'          => sanitize_text_field( $method['status'] ?? 'active' ),
+                    'sort_order'      => absint( $method['sort_order'] ?? 0 ),
+                );
+
+                if ( empty( $data['method_name'] ) ) {
+                    continue;
+                }
+
+                $id = absint( $method['id'] ?? 0 );
+                if ( $id > 0 ) {
+                    $wpdb->update( $prefix . 'delivery_methods', $data, array( 'id' => $id ) );
+                    $submitted_ids[] = $id;
+                } else {
+                    $wpdb->insert( $prefix . 'delivery_methods', $data );
+                    $submitted_ids[] = $wpdb->insert_id;
+                }
+            }
+
+            // Delete removed methods.
+            $to_delete = array_diff( $existing_ids, $submitted_ids );
+            foreach ( $to_delete as $delete_id ) {
+                $wpdb->delete( $prefix . 'delivery_methods', array( 'id' => $delete_id ) );
+            }
+        }
+
+        // Save distance rates.
+        if ( isset( $_POST['mj_distance_rates'] ) && is_array( $_POST['mj_distance_rates'] ) ) {
+            $existing_ids = $wpdb->get_col( "SELECT id FROM {$prefix}distance_rates" );
+            $submitted_ids = array();
+
+            foreach ( $_POST['mj_distance_rates'] as $rate ) {
+                $data = array(
+                    'min_distance'   => floatval( $rate['min_distance'] ?? 0 ),
+                    'max_distance'   => floatval( $rate['max_distance'] ?? 0 ),
+                    'delivery_fee'   => floatval( $rate['delivery_fee'] ?? 0 ),
+                    'estimated_time' => sanitize_text_field( $rate['estimated_time'] ?? '' ),
+                    'status'         => sanitize_text_field( $rate['status'] ?? 'active' ),
+                );
+
+                $id = absint( $rate['id'] ?? 0 );
+                if ( $id > 0 ) {
+                    $wpdb->update( $prefix . 'distance_rates', $data, array( 'id' => $id ) );
+                    $submitted_ids[] = $id;
+                } else {
+                    $wpdb->insert( $prefix . 'distance_rates', $data );
+                    $submitted_ids[] = $wpdb->insert_id;
+                }
+            }
+
+            $to_delete = array_diff( $existing_ids, $submitted_ids );
+            foreach ( $to_delete as $delete_id ) {
+                $wpdb->delete( $prefix . 'distance_rates', array( 'id' => $delete_id ) );
+            }
+        }
+
+        // Save pickup locations.
+        if ( isset( $_POST['mj_pickup_locations'] ) && is_array( $_POST['mj_pickup_locations'] ) ) {
+            $existing_ids = $wpdb->get_col( "SELECT id FROM {$prefix}pickup_locations" );
+            $submitted_ids = array();
+
+            foreach ( $_POST['mj_pickup_locations'] as $location ) {
+                $data = array(
+                    'location_name'      => sanitize_text_field( $location['location_name'] ?? '' ),
+                    'address'            => sanitize_text_field( $location['address'] ?? '' ),
+                    'city'               => sanitize_text_field( $location['city'] ?? '' ),
+                    'availability_hours' => sanitize_text_field( $location['availability_hours'] ?? '' ),
+                    'phone'              => sanitize_text_field( $location['phone'] ?? '' ),
+                    'status'             => sanitize_text_field( $location['status'] ?? 'active' ),
+                );
+
+                if ( empty( $data['location_name'] ) ) {
+                    continue;
+                }
+
+                $id = absint( $location['id'] ?? 0 );
+                if ( $id > 0 ) {
+                    $wpdb->update( $prefix . 'pickup_locations', $data, array( 'id' => $id ) );
+                    $submitted_ids[] = $id;
+                } else {
+                    $wpdb->insert( $prefix . 'pickup_locations', $data );
+                    $submitted_ids[] = $wpdb->insert_id;
+                }
+            }
+
+            $to_delete = array_diff( $existing_ids, $submitted_ids );
+            foreach ( $to_delete as $delete_id ) {
+                $wpdb->delete( $prefix . 'pickup_locations', array( 'id' => $delete_id ) );
+            }
+        }
     }
 
     /**
