@@ -276,6 +276,41 @@ class Mitzies_Jerk_Emails {
         echo '<p><strong>' . esc_html__( 'Order Number:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $order->get( 'order_number' ) ) . '</p>';
         echo '<p><strong>' . esc_html__( 'Order Date:', 'mitzies-jerk' ) . '</strong> ' . esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $order->get( 'created_at' ) ) ) ) . '</p>';
         echo '<p><strong>' . esc_html__( 'Delivery Date/Time:', 'mitzies-jerk' ) . '</strong> ' . esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $order->get( 'delivery_datetime' ) ) ) ) . '</p>';
+
+        // Show delivery timeframe/estimated time.
+        $delivery_info = $order->get( 'delivery' );
+        $delivery_method_id = isset( $delivery_info['delivery_method'] ) ? absint( $delivery_info['delivery_method'] ) : 0;
+        $estimated_time = '';
+
+        if ( $delivery_method_id > 0 ) {
+            global $wpdb;
+            $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
+            $method = $wpdb->get_row( $wpdb->prepare(
+                "SELECT method_name, estimated_time, method_type FROM {$prefix}delivery_methods WHERE id = %d",
+                $delivery_method_id
+            ) );
+            if ( $method ) {
+                echo '<p><strong>' . esc_html__( 'Delivery Method:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $method->method_name ) . '</p>';
+                if ( ! empty( $method->estimated_time ) ) {
+                    $estimated_time = $method->estimated_time;
+                }
+                // Show pickup location if applicable.
+                if ( 'pickup' === $method->method_type && ! empty( $delivery_info['pickup_location'] ) ) {
+                    $location = $wpdb->get_row( $wpdb->prepare(
+                        "SELECT location_name, address FROM {$prefix}pickup_locations WHERE id = %d",
+                        absint( $delivery_info['pickup_location'] )
+                    ) );
+                    if ( $location ) {
+                        echo '<p><strong>' . esc_html__( 'Pickup Location:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $location->location_name ) . ' - ' . esc_html( $location->address ) . '</p>';
+                    }
+                }
+            }
+        }
+
+        if ( ! empty( $estimated_time ) ) {
+            echo '<p><strong>' . esc_html__( 'Estimated Delivery Timeframe:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $estimated_time ) . '</p>';
+        }
+
         echo '</div>';
 
         // Order items.

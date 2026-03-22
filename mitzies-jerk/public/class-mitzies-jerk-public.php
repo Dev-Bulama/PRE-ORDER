@@ -120,6 +120,14 @@ class Mitzies_Jerk_Public {
                 'select_payment'    => __( 'Please select a payment method.', 'mitzies-jerk' ),
                 'fill_required'     => __( 'Please fill in all required fields.', 'mitzies-jerk' ),
                 'closed_day'        => __( 'Sorry, we are closed on this day.', 'mitzies-jerk' ),
+                'order_success'     => __( 'Order placed successfully!', 'mitzies-jerk' ),
+                'timeout'           => __( 'Request timed out. Please check your order status before trying again.', 'mitzies-jerk' ),
+                'loading'           => __( 'Loading...', 'mitzies-jerk' ),
+                'select_delivery'   => __( 'Select Delivery Method', 'mitzies-jerk' ),
+                'select_pickup'     => __( 'Select Pickup Location', 'mitzies-jerk' ),
+                'choose_location'   => __( 'Choose a location...', 'mitzies-jerk' ),
+                'free'              => __( 'Free', 'mitzies-jerk' ),
+                'distance'          => __( 'Distance', 'mitzies-jerk' ),
             ),
         ) );
     }

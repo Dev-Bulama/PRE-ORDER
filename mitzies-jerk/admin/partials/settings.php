@@ -45,6 +45,14 @@ $defaults = array(
     'enable_guest_checkout' => true,
     'enable_reviews' => true,
     'review_approval' => true,
+    'order_auto_approve' => false,
+    'show_addons_on_thumbnail' => true,
+    'enable_distance_rates' => false,
+    'google_maps_api_key' => '',
+    'store_latitude' => '',
+    'store_longitude' => '',
+    'store_address' => '',
+    'distance_unit' => 'km',
     'enable_logging' => false,
     'delete_data_on_uninstall' => false,
 );
@@ -54,6 +62,7 @@ $options = wp_parse_args( $options, $defaults );
 $tabs = array(
     'general'  => __( 'General', 'mitzies-jerk' ),
     'preorder' => __( 'Pre-Order', 'mitzies-jerk' ),
+    'delivery' => __( 'Delivery & Pickup', 'mitzies-jerk' ),
     'payment'  => __( 'Payment', 'mitzies-jerk' ),
     'email'    => __( 'Email', 'mitzies-jerk' ),
     'advanced' => __( 'Advanced', 'mitzies-jerk' ),
@@ -171,6 +180,20 @@ $currencies = array(
                     </tr>
                 </table>
 
+                <h2><?php esc_html_e( 'Order Settings', 'mitzies-jerk' ); ?></h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Order Auto-Approval', 'mitzies-jerk' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="mitzies_jerk_settings[order_auto_approve]" value="1" <?php checked( $options['order_auto_approve'], true ); ?>>
+                                <?php esc_html_e( 'Auto-approve orders (set to Processing instead of Pending)', 'mitzies-jerk' ); ?>
+                            </label>
+                            <p class="description"><?php esc_html_e( 'When enabled, new orders will be automatically set to "Processing" status. When disabled, orders will stay as "Pending" until manually approved.', 'mitzies-jerk' ); ?></p>
+                        </td>
+                    </tr>
+                </table>
+
                 <h2><?php esc_html_e( 'Display Settings', 'mitzies-jerk' ); ?></h2>
                 <table class="form-table">
                     <tr>
@@ -187,6 +210,16 @@ $currencies = array(
                                 <input type="checkbox" name="mitzies_jerk_settings[enable_guest_checkout]" value="1" <?php checked( $options['enable_guest_checkout'], true ); ?>>
                                 <?php esc_html_e( 'Allow customers to checkout without an account', 'mitzies-jerk' ); ?>
                             </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Add-ons on Thumbnails', 'mitzies-jerk' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="mitzies_jerk_settings[show_addons_on_thumbnail]" value="1" <?php checked( $options['show_addons_on_thumbnail'], true ); ?>>
+                                <?php esc_html_e( 'Show add-ons checkbox on product thumbnail/grid', 'mitzies-jerk' ); ?>
+                            </label>
+                            <p class="description"><?php esc_html_e( 'When OFF, add-ons will only be visible inside the product detail page.', 'mitzies-jerk' ); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -294,6 +327,210 @@ $currencies = array(
                         </td>
                     </tr>
                 </table>
+            </div>
+
+        <?php elseif ( 'delivery' === $active_tab ) : ?>
+            <!-- Delivery & Pickup Settings -->
+            <?php
+            global $wpdb;
+            $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
+
+            // Fetch existing delivery methods.
+            $delivery_methods = $wpdb->get_results( "SELECT * FROM {$prefix}delivery_methods ORDER BY sort_order ASC" );
+            if ( ! $delivery_methods ) {
+                $delivery_methods = array();
+            }
+
+            // Fetch existing distance rates.
+            $distance_rates = $wpdb->get_results( "SELECT * FROM {$prefix}distance_rates ORDER BY min_distance ASC" );
+            if ( ! $distance_rates ) {
+                $distance_rates = array();
+            }
+
+            // Fetch existing pickup locations.
+            $pickup_locations = $wpdb->get_results( "SELECT * FROM {$prefix}pickup_locations ORDER BY sort_order ASC" );
+            if ( ! $pickup_locations ) {
+                $pickup_locations = array();
+            }
+            ?>
+
+            <div class="mj-settings-section">
+                <h2><?php esc_html_e( 'Delivery Methods', 'mitzies-jerk' ); ?></h2>
+                <p class="description"><?php esc_html_e( 'Configure delivery and pickup methods available to customers.', 'mitzies-jerk' ); ?></p>
+
+                <table class="widefat mj-delivery-methods-table" id="mj-delivery-methods-table">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'Method Name', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Type', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Base Fee', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Extra Fee', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Est. Time', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Distance-Based', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Status', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Actions', 'mitzies-jerk' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ( $delivery_methods as $index => $method ) : ?>
+                            <tr data-id="<?php echo esc_attr( $method->id ); ?>">
+                                <td><input type="text" name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][method_name]" value="<?php echo esc_attr( $method->method_name ); ?>" class="regular-text"></td>
+                                <td>
+                                    <select name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][method_type]">
+                                        <option value="delivery" <?php selected( $method->method_type, 'delivery' ); ?>><?php esc_html_e( 'Delivery', 'mitzies-jerk' ); ?></option>
+                                        <option value="pickup" <?php selected( $method->method_type, 'pickup' ); ?>><?php esc_html_e( 'Pickup', 'mitzies-jerk' ); ?></option>
+                                    </select>
+                                </td>
+                                <td><input type="number" name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][base_fee]" value="<?php echo esc_attr( $method->base_fee ); ?>" step="0.01" min="0" class="small-text"></td>
+                                <td><input type="number" name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][extra_fee]" value="<?php echo esc_attr( $method->extra_fee ); ?>" step="0.01" min="0" class="small-text"></td>
+                                <td><input type="text" name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][estimated_time]" value="<?php echo esc_attr( $method->estimated_time ); ?>" placeholder="30-45 mins" class="small-text"></td>
+                                <td><input type="checkbox" name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][is_distance_based]" value="1" <?php checked( $method->is_distance_based, 1 ); ?>></td>
+                                <td>
+                                    <select name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][status]">
+                                        <option value="active" <?php selected( $method->status, 'active' ); ?>><?php esc_html_e( 'Active', 'mitzies-jerk' ); ?></option>
+                                        <option value="inactive" <?php selected( $method->status, 'inactive' ); ?>><?php esc_html_e( 'Inactive', 'mitzies-jerk' ); ?></option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="hidden" name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $method->id ); ?>">
+                                    <input type="hidden" name="mj_delivery_methods[<?php echo esc_attr( $index ); ?>][sort_order]" value="<?php echo esc_attr( $method->sort_order ); ?>">
+                                    <button type="button" class="button mj-remove-delivery-method">&times;</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p><button type="button" class="button" id="mj-add-delivery-method"><?php esc_html_e( 'Add Delivery Method', 'mitzies-jerk' ); ?></button></p>
+            </div>
+
+            <div class="mj-settings-section">
+                <h2><?php esc_html_e( 'Distance-Based Delivery Rates', 'mitzies-jerk' ); ?></h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Enable Distance Rates', 'mitzies-jerk' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="mitzies_jerk_settings[enable_distance_rates]" value="1" <?php checked( $options['enable_distance_rates'], true ); ?>>
+                                <?php esc_html_e( 'Calculate delivery fees based on distance from store', 'mitzies-jerk' ); ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="google_maps_api_key"><?php esc_html_e( 'Google Maps API Key', 'mitzies-jerk' ); ?></label></th>
+                        <td>
+                            <input type="text" name="mitzies_jerk_settings[google_maps_api_key]" id="google_maps_api_key"
+                                   value="<?php echo esc_attr( $options['google_maps_api_key'] ); ?>" class="regular-text">
+                            <p class="description"><?php esc_html_e( 'Required for automatic distance calculation. Get your key from Google Cloud Console. If not set, manual delivery zones will be used.', 'mitzies-jerk' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="store_address"><?php esc_html_e( 'Store Address', 'mitzies-jerk' ); ?></label></th>
+                        <td>
+                            <input type="text" name="mitzies_jerk_settings[store_address]" id="store_address"
+                                   value="<?php echo esc_attr( $options['store_address'] ); ?>" class="large-text"
+                                   placeholder="<?php esc_attr_e( '123 Main Street, City, Country', 'mitzies-jerk' ); ?>">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Store Coordinates', 'mitzies-jerk' ); ?></th>
+                        <td>
+                            <label><?php esc_html_e( 'Latitude:', 'mitzies-jerk' ); ?>
+                                <input type="text" name="mitzies_jerk_settings[store_latitude]" value="<?php echo esc_attr( $options['store_latitude'] ); ?>" class="small-text" placeholder="0.000000">
+                            </label>
+                            <label style="margin-left: 10px;"><?php esc_html_e( 'Longitude:', 'mitzies-jerk' ); ?>
+                                <input type="text" name="mitzies_jerk_settings[store_longitude]" value="<?php echo esc_attr( $options['store_longitude'] ); ?>" class="small-text" placeholder="0.000000">
+                            </label>
+                            <p class="description"><?php esc_html_e( 'Used for fallback distance calculation without Google Maps API.', 'mitzies-jerk' ); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="distance_unit"><?php esc_html_e( 'Distance Unit', 'mitzies-jerk' ); ?></label></th>
+                        <td>
+                            <select name="mitzies_jerk_settings[distance_unit]" id="distance_unit">
+                                <option value="km" <?php selected( $options['distance_unit'], 'km' ); ?>><?php esc_html_e( 'Kilometers (km)', 'mitzies-jerk' ); ?></option>
+                                <option value="miles" <?php selected( $options['distance_unit'], 'miles' ); ?>><?php esc_html_e( 'Miles', 'mitzies-jerk' ); ?></option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+
+                <h3><?php esc_html_e( 'Distance Rate Tiers', 'mitzies-jerk' ); ?></h3>
+                <p class="description"><?php esc_html_e( 'Define delivery fee tiers based on distance ranges.', 'mitzies-jerk' ); ?></p>
+
+                <table class="widefat mj-distance-rates-table" id="mj-distance-rates-table">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'Min Distance', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Max Distance', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Delivery Fee', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Est. Time', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Status', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Actions', 'mitzies-jerk' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ( $distance_rates as $index => $rate ) : ?>
+                            <tr data-id="<?php echo esc_attr( $rate->id ); ?>">
+                                <td><input type="number" name="mj_distance_rates[<?php echo esc_attr( $index ); ?>][min_distance]" value="<?php echo esc_attr( $rate->min_distance ); ?>" step="0.1" min="0" class="small-text"></td>
+                                <td><input type="number" name="mj_distance_rates[<?php echo esc_attr( $index ); ?>][max_distance]" value="<?php echo esc_attr( $rate->max_distance ); ?>" step="0.1" min="0" class="small-text"></td>
+                                <td><input type="number" name="mj_distance_rates[<?php echo esc_attr( $index ); ?>][delivery_fee]" value="<?php echo esc_attr( $rate->delivery_fee ); ?>" step="0.01" min="0" class="small-text"></td>
+                                <td><input type="text" name="mj_distance_rates[<?php echo esc_attr( $index ); ?>][estimated_time]" value="<?php echo esc_attr( $rate->estimated_time ); ?>" placeholder="30-45 mins" class="small-text"></td>
+                                <td>
+                                    <select name="mj_distance_rates[<?php echo esc_attr( $index ); ?>][status]">
+                                        <option value="active" <?php selected( $rate->status, 'active' ); ?>><?php esc_html_e( 'Active', 'mitzies-jerk' ); ?></option>
+                                        <option value="inactive" <?php selected( $rate->status, 'inactive' ); ?>><?php esc_html_e( 'Inactive', 'mitzies-jerk' ); ?></option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="hidden" name="mj_distance_rates[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $rate->id ); ?>">
+                                    <button type="button" class="button mj-remove-distance-rate">&times;</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p><button type="button" class="button" id="mj-add-distance-rate"><?php esc_html_e( 'Add Distance Rate', 'mitzies-jerk' ); ?></button></p>
+            </div>
+
+            <div class="mj-settings-section">
+                <h2><?php esc_html_e( 'Pickup Locations', 'mitzies-jerk' ); ?></h2>
+                <p class="description"><?php esc_html_e( 'Add pickup locations where customers can collect their orders.', 'mitzies-jerk' ); ?></p>
+
+                <table class="widefat mj-pickup-locations-table" id="mj-pickup-locations-table">
+                    <thead>
+                        <tr>
+                            <th><?php esc_html_e( 'Location Name', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Address', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'City', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Availability Hours', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Phone', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Status', 'mitzies-jerk' ); ?></th>
+                            <th><?php esc_html_e( 'Actions', 'mitzies-jerk' ); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ( $pickup_locations as $index => $location ) : ?>
+                            <tr data-id="<?php echo esc_attr( $location->id ); ?>">
+                                <td><input type="text" name="mj_pickup_locations[<?php echo esc_attr( $index ); ?>][location_name]" value="<?php echo esc_attr( $location->location_name ); ?>" class="regular-text"></td>
+                                <td><input type="text" name="mj_pickup_locations[<?php echo esc_attr( $index ); ?>][address]" value="<?php echo esc_attr( $location->address ); ?>" class="regular-text"></td>
+                                <td><input type="text" name="mj_pickup_locations[<?php echo esc_attr( $index ); ?>][city]" value="<?php echo esc_attr( $location->city ); ?>" class="small-text"></td>
+                                <td><input type="text" name="mj_pickup_locations[<?php echo esc_attr( $index ); ?>][availability_hours]" value="<?php echo esc_attr( $location->availability_hours ); ?>" placeholder="Mon-Fri 9AM-6PM" class="regular-text"></td>
+                                <td><input type="text" name="mj_pickup_locations[<?php echo esc_attr( $index ); ?>][phone]" value="<?php echo esc_attr( $location->phone ); ?>" class="small-text"></td>
+                                <td>
+                                    <select name="mj_pickup_locations[<?php echo esc_attr( $index ); ?>][status]">
+                                        <option value="active" <?php selected( $location->status, 'active' ); ?>><?php esc_html_e( 'Active', 'mitzies-jerk' ); ?></option>
+                                        <option value="inactive" <?php selected( $location->status, 'inactive' ); ?>><?php esc_html_e( 'Inactive', 'mitzies-jerk' ); ?></option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="hidden" name="mj_pickup_locations[<?php echo esc_attr( $index ); ?>][id]" value="<?php echo esc_attr( $location->id ); ?>">
+                                    <button type="button" class="button mj-remove-pickup-location">&times;</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p><button type="button" class="button" id="mj-add-pickup-location"><?php esc_html_e( 'Add Pickup Location', 'mitzies-jerk' ); ?></button></p>
             </div>
 
         <?php elseif ( 'payment' === $active_tab ) : ?>
@@ -679,6 +916,63 @@ jQuery(document).ready(function($) {
     // Remove time slot.
     $(document).on('click', '.mj-remove-slot', function() {
         $(this).closest('.mj-time-slot').remove();
+    });
+
+    // Add delivery method.
+    var deliveryMethodIndex = <?php echo count( isset( $delivery_methods ) ? $delivery_methods : array() ); ?>;
+    $('#mj-add-delivery-method').on('click', function() {
+        var html = '<tr>' +
+            '<td><input type="text" name="mj_delivery_methods[' + deliveryMethodIndex + '][method_name]" value="" class="regular-text" placeholder="<?php esc_attr_e( 'Method name', 'mitzies-jerk' ); ?>"></td>' +
+            '<td><select name="mj_delivery_methods[' + deliveryMethodIndex + '][method_type]"><option value="delivery"><?php esc_html_e( 'Delivery', 'mitzies-jerk' ); ?></option><option value="pickup"><?php esc_html_e( 'Pickup', 'mitzies-jerk' ); ?></option></select></td>' +
+            '<td><input type="number" name="mj_delivery_methods[' + deliveryMethodIndex + '][base_fee]" value="0" step="0.01" min="0" class="small-text"></td>' +
+            '<td><input type="number" name="mj_delivery_methods[' + deliveryMethodIndex + '][extra_fee]" value="0" step="0.01" min="0" class="small-text"></td>' +
+            '<td><input type="text" name="mj_delivery_methods[' + deliveryMethodIndex + '][estimated_time]" value="" placeholder="30-45 mins" class="small-text"></td>' +
+            '<td><input type="checkbox" name="mj_delivery_methods[' + deliveryMethodIndex + '][is_distance_based]" value="1"></td>' +
+            '<td><select name="mj_delivery_methods[' + deliveryMethodIndex + '][status]"><option value="active"><?php esc_html_e( 'Active', 'mitzies-jerk' ); ?></option><option value="inactive"><?php esc_html_e( 'Inactive', 'mitzies-jerk' ); ?></option></select></td>' +
+            '<td><input type="hidden" name="mj_delivery_methods[' + deliveryMethodIndex + '][id]" value="0"><input type="hidden" name="mj_delivery_methods[' + deliveryMethodIndex + '][sort_order]" value="' + deliveryMethodIndex + '"><button type="button" class="button mj-remove-delivery-method">&times;</button></td>' +
+            '</tr>';
+        $('#mj-delivery-methods-table tbody').append(html);
+        deliveryMethodIndex++;
+    });
+    $(document).on('click', '.mj-remove-delivery-method', function() {
+        $(this).closest('tr').remove();
+    });
+
+    // Add distance rate.
+    var distanceRateIndex = <?php echo count( isset( $distance_rates ) ? $distance_rates : array() ); ?>;
+    $('#mj-add-distance-rate').on('click', function() {
+        var html = '<tr>' +
+            '<td><input type="number" name="mj_distance_rates[' + distanceRateIndex + '][min_distance]" value="0" step="0.1" min="0" class="small-text"></td>' +
+            '<td><input type="number" name="mj_distance_rates[' + distanceRateIndex + '][max_distance]" value="0" step="0.1" min="0" class="small-text"></td>' +
+            '<td><input type="number" name="mj_distance_rates[' + distanceRateIndex + '][delivery_fee]" value="0" step="0.01" min="0" class="small-text"></td>' +
+            '<td><input type="text" name="mj_distance_rates[' + distanceRateIndex + '][estimated_time]" value="" placeholder="30-45 mins" class="small-text"></td>' +
+            '<td><select name="mj_distance_rates[' + distanceRateIndex + '][status]"><option value="active"><?php esc_html_e( 'Active', 'mitzies-jerk' ); ?></option><option value="inactive"><?php esc_html_e( 'Inactive', 'mitzies-jerk' ); ?></option></select></td>' +
+            '<td><input type="hidden" name="mj_distance_rates[' + distanceRateIndex + '][id]" value="0"><button type="button" class="button mj-remove-distance-rate">&times;</button></td>' +
+            '</tr>';
+        $('#mj-distance-rates-table tbody').append(html);
+        distanceRateIndex++;
+    });
+    $(document).on('click', '.mj-remove-distance-rate', function() {
+        $(this).closest('tr').remove();
+    });
+
+    // Add pickup location.
+    var pickupLocationIndex = <?php echo count( isset( $pickup_locations ) ? $pickup_locations : array() ); ?>;
+    $('#mj-add-pickup-location').on('click', function() {
+        var html = '<tr>' +
+            '<td><input type="text" name="mj_pickup_locations[' + pickupLocationIndex + '][location_name]" value="" class="regular-text" placeholder="<?php esc_attr_e( 'Location name', 'mitzies-jerk' ); ?>"></td>' +
+            '<td><input type="text" name="mj_pickup_locations[' + pickupLocationIndex + '][address]" value="" class="regular-text" placeholder="<?php esc_attr_e( 'Full address', 'mitzies-jerk' ); ?>"></td>' +
+            '<td><input type="text" name="mj_pickup_locations[' + pickupLocationIndex + '][city]" value="" class="small-text"></td>' +
+            '<td><input type="text" name="mj_pickup_locations[' + pickupLocationIndex + '][availability_hours]" value="" placeholder="Mon-Fri 9AM-6PM" class="regular-text"></td>' +
+            '<td><input type="text" name="mj_pickup_locations[' + pickupLocationIndex + '][phone]" value="" class="small-text"></td>' +
+            '<td><select name="mj_pickup_locations[' + pickupLocationIndex + '][status]"><option value="active"><?php esc_html_e( 'Active', 'mitzies-jerk' ); ?></option><option value="inactive"><?php esc_html_e( 'Inactive', 'mitzies-jerk' ); ?></option></select></td>' +
+            '<td><input type="hidden" name="mj_pickup_locations[' + pickupLocationIndex + '][id]" value="0"><button type="button" class="button mj-remove-pickup-location">&times;</button></td>' +
+            '</tr>';
+        $('#mj-pickup-locations-table tbody').append(html);
+        pickupLocationIndex++;
+    });
+    $(document).on('click', '.mj-remove-pickup-location', function() {
+        $(this).closest('tr').remove();
     });
 
     // Send test email.

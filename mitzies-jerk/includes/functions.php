@@ -45,7 +45,15 @@ function mitzies_jerk_update_option( $option, $value ) {
  * @return string
  */
 function mitzies_jerk_format_price( $price ) {
-    $currency_symbol = mitzies_jerk_get_option( 'currency_symbol', '$' );
+    // Try to inherit currency from WooCommerce if available.
+    $currency_symbol = mitzies_jerk_get_option( 'currency_symbol', '' );
+    if ( empty( $currency_symbol ) && function_exists( 'get_woocommerce_currency_symbol' ) ) {
+        $currency_symbol = get_woocommerce_currency_symbol();
+    }
+    if ( empty( $currency_symbol ) ) {
+        $currency_symbol = mitzies_jerk_get_active_currency_symbol();
+    }
+
     $currency_position = mitzies_jerk_get_option( 'currency_position', 'left' );
     $decimal_places = mitzies_jerk_get_option( 'decimal_places', 2 );
     $thousands_sep = mitzies_jerk_get_option( 'thousands_separator', ',' );
@@ -198,12 +206,64 @@ function mitzies_jerk_log( $message, $level = 'info', $context = array() ) {
  *
  * @return array Payment gateways.
  */
+/**
+ * Get active currency symbol based on currency code.
+ * Tries to inherit from WooCommerce or other plugins, falls back to plugin settings.
+ *
+ * @since 1.1.0
+ * @return string
+ */
+function mitzies_jerk_get_active_currency_symbol() {
+    $currency = mitzies_jerk_get_option( 'currency', 'USD' );
+
+    // Try WooCommerce first.
+    if ( function_exists( 'get_woocommerce_currency' ) ) {
+        $currency = get_woocommerce_currency();
+    }
+
+    $symbols = array(
+        'USD' => '$',
+        'EUR' => '€',
+        'GBP' => '£',
+        'NGN' => '₦',
+        'GHS' => 'GH₵',
+        'KES' => 'KSh',
+        'ZAR' => 'R',
+        'INR' => '₹',
+        'AUD' => 'A$',
+        'CAD' => 'C$',
+        'JPY' => '¥',
+        'CNY' => '¥',
+        'BRL' => 'R$',
+        'MXN' => 'Mex$',
+        'KRW' => '₩',
+        'TRY' => '₺',
+        'RUB' => '₽',
+        'SEK' => 'kr',
+        'NOK' => 'kr',
+        'DKK' => 'kr',
+        'PLN' => 'zł',
+        'THB' => '฿',
+        'AED' => 'د.إ',
+        'SAR' => '﷼',
+        'EGP' => 'E£',
+        'XOF' => 'CFA',
+        'XAF' => 'FCFA',
+        'TZS' => 'TSh',
+        'UGX' => 'USh',
+        'RWF' => 'FRw',
+    );
+
+    return isset( $symbols[ $currency ] ) ? $symbols[ $currency ] : '$';
+}
+
 function mitzies_jerk_get_payment_gateways() {
     return array(
         'paystack'    => __( 'Paystack', 'mitzies-jerk' ),
         'flutterwave' => __( 'Flutterwave', 'mitzies-jerk' ),
         'stripe'      => __( 'Stripe', 'mitzies-jerk' ),
         'paypal'      => __( 'PayPal', 'mitzies-jerk' ),
+        'square'      => __( 'Square', 'mitzies-jerk' ),
         'cod'         => __( 'Cash on Delivery', 'mitzies-jerk' ),
     );
 }

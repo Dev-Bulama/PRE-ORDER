@@ -173,8 +173,81 @@ class Mitzies_Jerk_Activator {
 
         dbDelta( $sql_addons );
 
+        // Distance-based delivery rates table.
+        $sql_distance_rates = "CREATE TABLE IF NOT EXISTS {$prefix}distance_rates (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            min_distance decimal(10,2) NOT NULL DEFAULT 0,
+            max_distance decimal(10,2) NOT NULL DEFAULT 0,
+            delivery_fee decimal(10,2) NOT NULL DEFAULT 0,
+            estimated_time varchar(100) DEFAULT NULL,
+            status enum('active','inactive') DEFAULT 'active',
+            sort_order int(11) DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY status (status)
+        ) $charset_collate;";
+
+        dbDelta( $sql_distance_rates );
+
+        // Delivery methods table.
+        $sql_delivery_methods = "CREATE TABLE IF NOT EXISTS {$prefix}delivery_methods (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            method_name varchar(255) NOT NULL,
+            method_type enum('delivery','pickup') NOT NULL DEFAULT 'delivery',
+            description text,
+            base_fee decimal(10,2) NOT NULL DEFAULT 0,
+            extra_fee decimal(10,2) NOT NULL DEFAULT 0,
+            estimated_time varchar(100) DEFAULT NULL,
+            is_distance_based tinyint(1) DEFAULT 0,
+            status enum('active','inactive') DEFAULT 'active',
+            sort_order int(11) DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY method_type (method_type),
+            KEY status (status)
+        ) $charset_collate;";
+
+        dbDelta( $sql_delivery_methods );
+
+        // Pickup locations table.
+        $sql_pickup_locations = "CREATE TABLE IF NOT EXISTS {$prefix}pickup_locations (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            location_name varchar(255) NOT NULL,
+            address text NOT NULL,
+            city varchar(100) DEFAULT NULL,
+            state varchar(100) DEFAULT NULL,
+            postcode varchar(20) DEFAULT NULL,
+            latitude decimal(10,8) DEFAULT NULL,
+            longitude decimal(11,8) DEFAULT NULL,
+            availability_hours text,
+            phone varchar(50) DEFAULT NULL,
+            status enum('active','inactive') DEFAULT 'active',
+            sort_order int(11) DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY status (status)
+        ) $charset_collate;";
+
+        dbDelta( $sql_pickup_locations );
+
+        // Order tracking history table.
+        $sql_order_tracking = "CREATE TABLE IF NOT EXISTS {$prefix}order_tracking (
+            id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            order_id bigint(20) UNSIGNED NOT NULL,
+            status varchar(50) NOT NULL,
+            note text,
+            location varchar(255) DEFAULT NULL,
+            created_by bigint(20) UNSIGNED DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY order_id (order_id),
+            KEY status (status)
+        ) $charset_collate;";
+
+        dbDelta( $sql_order_tracking );
+
         // Update database version.
-        update_option( 'mitzies_jerk_db_version', '1.0.0' );
+        update_option( 'mitzies_jerk_db_version', '1.1.0' );
     }
 
     /**
@@ -300,6 +373,18 @@ class Mitzies_Jerk_Activator {
             'enable_guest_checkout'  => true,
             'enable_reviews'         => true,
             'review_approval'        => true,
+
+            // Order settings.
+            'order_auto_approve'     => false,
+            'show_addons_on_thumbnail' => true,
+
+            // Delivery methods.
+            'enable_distance_rates'  => false,
+            'google_maps_api_key'    => '',
+            'store_latitude'         => '',
+            'store_longitude'        => '',
+            'store_address'          => '',
+            'distance_unit'          => 'km',
 
             // Advanced settings.
             'enable_logging'         => false,
