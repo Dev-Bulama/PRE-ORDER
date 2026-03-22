@@ -45,11 +45,8 @@ function mitzies_jerk_update_option( $option, $value ) {
  * @return string
  */
 function mitzies_jerk_format_price( $price ) {
-    // Try to inherit currency from WooCommerce if available.
+    // Use plugin's own currency settings - fully standalone.
     $currency_symbol = mitzies_jerk_get_option( 'currency_symbol', '' );
-    if ( empty( $currency_symbol ) && function_exists( 'get_woocommerce_currency_symbol' ) ) {
-        $currency_symbol = get_woocommerce_currency_symbol();
-    }
     if ( empty( $currency_symbol ) ) {
         $currency_symbol = mitzies_jerk_get_active_currency_symbol();
     }
@@ -207,19 +204,14 @@ function mitzies_jerk_log( $message, $level = 'info', $context = array() ) {
  * @return array Payment gateways.
  */
 /**
- * Get active currency symbol based on currency code.
- * Tries to inherit from WooCommerce or other plugins, falls back to plugin settings.
+ * Get active currency symbol based on the plugin's own currency setting.
+ * Fully standalone - does not depend on WooCommerce or any other plugin.
  *
  * @since 1.1.0
  * @return string
  */
 function mitzies_jerk_get_active_currency_symbol() {
     $currency = mitzies_jerk_get_option( 'currency', 'USD' );
-
-    // Try WooCommerce first.
-    if ( function_exists( 'get_woocommerce_currency' ) ) {
-        $currency = get_woocommerce_currency();
-    }
 
     $symbols = array(
         'USD' => '$',

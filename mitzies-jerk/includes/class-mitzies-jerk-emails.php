@@ -285,23 +285,29 @@ class Mitzies_Jerk_Emails {
         if ( $delivery_method_id > 0 ) {
             global $wpdb;
             $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
-            $method = $wpdb->get_row( $wpdb->prepare(
-                "SELECT method_name, estimated_time, method_type FROM {$prefix}delivery_methods WHERE id = %d",
-                $delivery_method_id
-            ) );
-            if ( $method ) {
-                echo '<p><strong>' . esc_html__( 'Delivery Method:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $method->method_name ) . '</p>';
-                if ( ! empty( $method->estimated_time ) ) {
-                    $estimated_time = $method->estimated_time;
-                }
-                // Show pickup location if applicable.
-                if ( 'pickup' === $method->method_type && ! empty( $delivery_info['pickup_location'] ) ) {
-                    $location = $wpdb->get_row( $wpdb->prepare(
-                        "SELECT location_name, address FROM {$prefix}pickup_locations WHERE id = %d",
-                        absint( $delivery_info['pickup_location'] )
-                    ) );
-                    if ( $location ) {
-                        echo '<p><strong>' . esc_html__( 'Pickup Location:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $location->location_name ) . ' - ' . esc_html( $location->address ) . '</p>';
+            $dm_table = $prefix . 'delivery_methods';
+
+            // Only query if tables exist.
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $dm_table ) ) === $dm_table ) {
+                $method = $wpdb->get_row( $wpdb->prepare(
+                    "SELECT method_name, estimated_time, method_type FROM {$dm_table} WHERE id = %d",
+                    $delivery_method_id
+                ) );
+                if ( $method ) {
+                    echo '<p><strong>' . esc_html__( 'Delivery Method:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $method->method_name ) . '</p>';
+                    if ( ! empty( $method->estimated_time ) ) {
+                        $estimated_time = $method->estimated_time;
+                    }
+                    // Show pickup location if applicable.
+                    $pl_table = $prefix . 'pickup_locations';
+                    if ( 'pickup' === $method->method_type && ! empty( $delivery_info['pickup_location'] ) && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $pl_table ) ) === $pl_table ) {
+                        $location = $wpdb->get_row( $wpdb->prepare(
+                            "SELECT location_name, address FROM {$pl_table} WHERE id = %d",
+                            absint( $delivery_info['pickup_location'] )
+                        ) );
+                        if ( $location ) {
+                            echo '<p><strong>' . esc_html__( 'Pickup Location:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $location->location_name ) . ' - ' . esc_html( $location->address ) . '</p>';
+                        }
                     }
                 }
             }

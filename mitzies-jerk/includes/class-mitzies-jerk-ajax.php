@@ -197,64 +197,81 @@ class Mitzies_Jerk_Ajax {
     public function process_checkout() {
         check_ajax_referer( 'mj_ajax_nonce', 'nonce' );
 
-        $posted_data = array();
-        $fields = array(
-            'first_name', 'last_name', 'email', 'phone',
-            'address_1', 'address_2', 'city', 'state', 'postcode',
-            'delivery_date', 'delivery_time', 'instructions',
-            'payment_method', 'delivery_method', 'pickup_method',
-            'pickup_location'
-        );
+        try {
+            $posted_data = array();
+            $fields = array(
+                'first_name', 'last_name', 'email', 'phone',
+                'address_1', 'address_2', 'city', 'state', 'postcode',
+                'delivery_date', 'delivery_time', 'instructions',
+                'payment_method', 'delivery_method', 'pickup_method',
+                'pickup_location'
+            );
 
-        foreach ( $fields as $field ) {
-            if ( isset( $_POST[ $field ] ) ) {
-                $posted_data[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+            foreach ( $fields as $field ) {
+                if ( isset( $_POST[ $field ] ) ) {
+                    $posted_data[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+                }
             }
-        }
 
-        $checkout = new Mitzies_Jerk_Checkout();
-        $result = $checkout->process_checkout( $posted_data );
+            $checkout = new Mitzies_Jerk_Checkout();
+            $result = $checkout->process_checkout( $posted_data );
 
-        if ( is_wp_error( $result ) ) {
-            wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-            return;
-        }
-
-        // Flatten the response for JS compatibility.
-        $response = array(
-            'success'  => true,
-            'order_id' => $result['order_id'],
-            'message'  => __( 'Order placed successfully!', 'mitzies-jerk' ),
-        );
-
-        // Extract redirect URL from payment result.
-        if ( isset( $result['payment']['redirect'] ) ) {
-            $response['redirect_url'] = $result['payment']['redirect'];
-        } elseif ( isset( $result['payment']['payment_url'] ) ) {
-            $response['redirect_url'] = $result['payment']['payment_url'];
-        }
-
-        // Always provide a fallback redirect URL to the order received page.
-        if ( empty( $response['redirect_url'] ) ) {
-            $order_received_page = get_option( 'mitzies_jerk_order_received_page_id' );
-            if ( $order_received_page ) {
-                $response['redirect_url'] = add_query_arg(
-                    array(
-                        'order_id' => $result['order_id'],
-                    ),
-                    get_permalink( $order_received_page )
-                );
-            } else {
-                $response['redirect_url'] = home_url( '/' );
+            if ( is_wp_error( $result ) ) {
+                wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+                return;
             }
-        }
 
-        // Include payment result status.
-        if ( isset( $result['payment']['result'] ) ) {
-            $response['result'] = $result['payment']['result'];
-        }
+            // Flatten the response for JS compatibility.
+            $response = array(
+                'success'  => true,
+                'order_id' => $result['order_id'],
+                'message'  => __( 'Order placed successfully!', 'mitzies-jerk' ),
+            );
 
-        wp_send_json_success( $response );
+            // Extract redirect URL from payment result.
+            if ( isset( $result['payment']['redirect'] ) ) {
+                $response['redirect_url'] = $result['payment']['redirect'];
+            } elseif ( isset( $result['payment']['payment_url'] ) ) {
+                $response['redirect_url'] = $result['payment']['payment_url'];
+            }
+
+            // Always provide a fallback redirect URL to the order received page.
+            if ( empty( $response['redirect_url'] ) ) {
+                $order_received_page = get_option( 'mitzies_jerk_order_received_page_id' );
+                if ( $order_received_page ) {
+                    $response['redirect_url'] = add_query_arg(
+                        array(
+                            'order_id' => $result['order_id'],
+                        ),
+                        get_permalink( $order_received_page )
+                    );
+                } else {
+                    $response['redirect_url'] = home_url( '/' );
+                }
+            }
+
+            // Include payment result status.
+            if ( isset( $result['payment']['result'] ) ) {
+                $response['result'] = $result['payment']['result'];
+            }
+
+            wp_send_json_success( $response );
+        } catch ( \Exception $e ) {
+            wp_send_json_error( array( 'message' => $e->getMessage() ) );
+        } catch ( \Error $e ) {
+            wp_send_json_error( array( 'message' => __( 'A server error occurred. Please try again.', 'mitzies-jerk' ) ) );
+        }
+    }
+
+    /**
+     * Check if a database table exists.
+     *
+     * @param string $table_name Full table name.
+     * @return bool
+     */
+    private function table_exists( $table_name ) {
+        global $wpdb;
+        return $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) ) === $table_name;
     }
 
     /**
@@ -270,10 +287,34 @@ class Mitzies_Jerk_Ajax {
         global $wpdb;
         $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
 
-        // Get available delivery methods.
-        $methods = $wpdb->get_results(
-            "SELECT * FROM {$prefix}delivery_methods WHERE status = 'active' ORDER BY sort_order ASC"
-        );
+        // Check if tables exist.
+        $methods = array();
+        if ( $this->table_exists( $prefix . 'delivery_methods' ) ) {
+            $methods = $wpdb->get_results(
+                "SELECT * FROM {$prefix}delivery_methods WHERE status = 'active' ORDER BY sort_order ASC"
+            );
+        }
+
+        // Legacy: get available delivery methods if table doesn't exist or is empty.
+        if ( empty( $methods ) ) {
+            $default_fee = mitzies_jerk_get_option( 'delivery_fee', 5.00 );
+            wp_send_json_success( array(
+                'methods'       => array(
+                    array(
+                        'id'             => 0,
+                        'name'           => __( 'Standard Delivery', 'mitzies-jerk' ),
+                        'type'           => 'delivery',
+                        'fee'            => $default_fee,
+                        'formatted_fee'  => mitzies_jerk_format_price( $default_fee ),
+                        'estimated_time' => '30-45 mins',
+                        'locations'      => array(),
+                    ),
+                ),
+                'distance'      => null,
+                'distance_unit' => mitzies_jerk_get_option( 'distance_unit', 'km' ),
+            ) );
+            return;
+        }
 
         $enable_distance_rates = mitzies_jerk_get_option( 'enable_distance_rates', false );
         $distance = 0;
@@ -325,7 +366,7 @@ class Mitzies_Jerk_Ajax {
 
             // For pickup methods, get available locations.
             $locations = array();
-            if ( 'pickup' === $method->method_type ) {
+            if ( 'pickup' === $method->method_type && $this->table_exists( $prefix . 'pickup_locations' ) ) {
                 $locations = $wpdb->get_results(
                     "SELECT * FROM {$prefix}pickup_locations WHERE status = 'active' ORDER BY sort_order ASC"
                 );
@@ -409,16 +450,25 @@ class Mitzies_Jerk_Ajax {
      * Get delivery methods for checkout.
      */
     public function get_delivery_methods() {
+        check_ajax_referer( 'mj_ajax_nonce', 'nonce' );
+
         global $wpdb;
         $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
 
-        $methods = $wpdb->get_results(
-            "SELECT * FROM {$prefix}delivery_methods WHERE status = 'active' ORDER BY sort_order ASC"
-        );
+        $methods = array();
+        $pickup_locations = array();
 
-        $pickup_locations = $wpdb->get_results(
-            "SELECT * FROM {$prefix}pickup_locations WHERE status = 'active' ORDER BY sort_order ASC"
-        );
+        if ( $this->table_exists( $prefix . 'delivery_methods' ) ) {
+            $methods = $wpdb->get_results(
+                "SELECT * FROM {$prefix}delivery_methods WHERE status = 'active' ORDER BY sort_order ASC"
+            );
+        }
+
+        if ( $this->table_exists( $prefix . 'pickup_locations' ) ) {
+            $pickup_locations = $wpdb->get_results(
+                "SELECT * FROM {$prefix}pickup_locations WHERE status = 'active' ORDER BY sort_order ASC"
+            );
+        }
 
         // If no methods configured, return defaults.
         if ( empty( $methods ) ) {
