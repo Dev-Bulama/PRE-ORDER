@@ -241,6 +241,15 @@ $currencies = array(
 
         <?php elseif ( 'preorder' === $active_tab ) : ?>
             <!-- Pre-Order Settings -->
+            <div class="mj-settings-section" style="background: #f0f6fc; border-left: 4px solid #2271b1; padding: 12px 16px; margin-bottom: 20px;">
+                <p style="margin: 0 0 8px;">
+                    <strong><?php esc_html_e( 'Quick Start', 'mitzies-jerk' ); ?></strong> &mdash;
+                    <?php esc_html_e( 'Populate pre-order configuration, delivery days, time slots, and fees with sample data.', 'mitzies-jerk' ); ?>
+                </p>
+                <button type="button" class="button button-primary" id="mj-populate-preorder-demo"><?php esc_html_e( 'Populate Demo Data', 'mitzies-jerk' ); ?></button>
+                <span class="description" style="margin-left: 8px;"><?php esc_html_e( 'This will replace existing values. Remember to click "Save Changes" after.', 'mitzies-jerk' ); ?></span>
+            </div>
+
             <div class="mj-settings-section">
                 <h2><?php esc_html_e( 'Pre-Order Configuration', 'mitzies-jerk' ); ?></h2>
                 <table class="form-table">
@@ -994,6 +1003,59 @@ jQuery(document).ready(function($) {
     });
     $(document).on('click', '.mj-remove-pickup-location', function() {
         $(this).closest('tr').remove();
+    });
+
+    // Populate demo data for Pre-Order tab.
+    $('#mj-populate-preorder-demo').on('click', function() {
+        if (!confirm('<?php esc_attr_e( 'This will replace all pre-order settings, delivery days, time slots, and fees with demo data. Continue?', 'mitzies-jerk' ); ?>')) {
+            return;
+        }
+
+        // Pre-Order Configuration fields.
+        $('#min_preorder_hours').val('24');
+        $('#max_preorder_days').val('14');
+        $('#payment_expiry_minutes').val('30');
+        $('#max_orders_per_day').val('50');
+
+        // Delivery Days — check all weekdays + Saturday.
+        $('input[name="mitzies_jerk_settings[delivery_days][]"]').each(function() {
+            var dayVal = parseInt($(this).val());
+            // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+            $(this).prop('checked', dayVal >= 1 && dayVal <= 6);
+        });
+
+        // Delivery Time Slots — clear and add 5 slots.
+        var demoSlots = [
+            { start: '08:00', end: '10:00' },
+            { start: '10:00', end: '12:00' },
+            { start: '12:00', end: '14:00' },
+            { start: '14:00', end: '17:00' },
+            { start: '17:00', end: '20:00' }
+        ];
+
+        $('#mj-time-slots').empty();
+        slotIndex = 0;
+        $.each(demoSlots, function(i, slot) {
+            var html = '<div class="mj-time-slot">' +
+                '<input type="time" name="mitzies_jerk_settings[delivery_time_slots][' + slotIndex + '][start]" value="' + slot.start + '">' +
+                '<span>to</span>' +
+                '<input type="time" name="mitzies_jerk_settings[delivery_time_slots][' + slotIndex + '][end]" value="' + slot.end + '">' +
+                '<button type="button" class="button mj-remove-slot">&times;</button>' +
+                '</div>';
+            $('#mj-time-slots').append(html);
+            slotIndex++;
+        });
+
+        // Delivery Fee and Free Delivery Threshold.
+        $('#delivery_fee').val('5.99');
+        $('#free_delivery_threshold').val('50.00');
+
+        // Flash confirmation.
+        var $btn = $(this);
+        $btn.text('<?php esc_attr_e( 'Demo data populated!', 'mitzies-jerk' ); ?>').css('background', '#00a32a').css('border-color', '#00a32a');
+        setTimeout(function() {
+            $btn.text('<?php esc_attr_e( 'Populate Demo Data', 'mitzies-jerk' ); ?>').css('background', '').css('border-color', '');
+        }, 2000);
     });
 
     // Populate demo data for Delivery & Pickup tab.
