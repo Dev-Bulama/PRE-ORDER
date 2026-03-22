@@ -383,6 +383,52 @@ class Mitzies_Jerk_Emails {
         echo '<p><strong>' . esc_html__( 'Phone:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $billing['phone'] ) . '</p>';
         echo '</div>';
 
+        // Bank transfer payment details (for customer confirmation emails).
+        if ( 'confirmation' === $type && 'bank_transfer' === $order->get( 'payment_method' ) ) {
+            $bt_gateway = new Mitzies_Jerk_Gateway_Bank_Transfer();
+            $bank_details = $bt_gateway->get_bank_details();
+            $instructions = $bt_gateway->get_instructions();
+            $proof_message = $bt_gateway->get_option( 'payment_proof_message', __( 'After making your bank transfer, please send a screenshot or photo of your payment receipt/proof to our email or WhatsApp. Include your Order Number as reference. Your order will be confirmed once we verify your payment.', 'mitzies-jerk' ) );
+
+            echo '<div class="info-box" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">';
+            echo '<h4 style="margin-top: 0; color: #856404;">' . esc_html__( 'Bank Transfer Payment Required', 'mitzies-jerk' ) . '</h4>';
+
+            if ( $instructions ) {
+                echo '<p style="color: #856404;">' . esc_html( $instructions ) . '</p>';
+            }
+
+            $has_bank_info = ! empty( $bank_details['bank_name'] ) || ! empty( $bank_details['account_name'] ) || ! empty( $bank_details['account_number'] );
+            if ( $has_bank_info ) {
+                echo '<table style="width: 100%; border-collapse: collapse; background: #fff; padding: 10px; border-radius: 5px;">';
+                if ( ! empty( $bank_details['bank_name'] ) ) {
+                    echo '<tr><td style="padding: 5px 10px 5px 15px; font-weight: 600;">' . esc_html__( 'Bank Name', 'mitzies-jerk' ) . '</td><td style="padding: 5px 0;">' . esc_html( $bank_details['bank_name'] ) . '</td></tr>';
+                }
+                if ( ! empty( $bank_details['account_name'] ) ) {
+                    echo '<tr><td style="padding: 5px 10px 5px 15px; font-weight: 600;">' . esc_html__( 'Account Name', 'mitzies-jerk' ) . '</td><td style="padding: 5px 0;">' . esc_html( $bank_details['account_name'] ) . '</td></tr>';
+                }
+                if ( ! empty( $bank_details['account_number'] ) ) {
+                    echo '<tr><td style="padding: 5px 10px 5px 15px; font-weight: 600;">' . esc_html__( 'Account Number', 'mitzies-jerk' ) . '</td><td style="padding: 5px 0;">' . esc_html( $bank_details['account_number'] ) . '</td></tr>';
+                }
+                if ( ! empty( $bank_details['sort_code'] ) ) {
+                    echo '<tr><td style="padding: 5px 10px 5px 15px; font-weight: 600;">' . esc_html__( 'Sort Code', 'mitzies-jerk' ) . '</td><td style="padding: 5px 0;">' . esc_html( $bank_details['sort_code'] ) . '</td></tr>';
+                }
+                if ( ! empty( $bank_details['iban'] ) ) {
+                    echo '<tr><td style="padding: 5px 10px 5px 15px; font-weight: 600;">' . esc_html__( 'IBAN', 'mitzies-jerk' ) . '</td><td style="padding: 5px 0;">' . esc_html( $bank_details['iban'] ) . '</td></tr>';
+                }
+                if ( ! empty( $bank_details['swift_code'] ) ) {
+                    echo '<tr><td style="padding: 5px 10px 5px 15px; font-weight: 600;">' . esc_html__( 'SWIFT/BIC', 'mitzies-jerk' ) . '</td><td style="padding: 5px 0;">' . esc_html( $bank_details['swift_code'] ) . '</td></tr>';
+                }
+                echo '</table>';
+                echo '<p style="margin: 10px 0 0; font-size: 13px;"><strong>' . esc_html__( 'Payment Reference:', 'mitzies-jerk' ) . '</strong> ' . esc_html( $order->get( 'order_number' ) ) . '</p>';
+            }
+
+            if ( $proof_message ) {
+                echo '<p style="margin: 15px 0 0; padding: 12px; background: #ffeeba; border-radius: 5px; color: #856404; font-weight: 600;">' . esc_html( $proof_message ) . '</p>';
+            }
+
+            echo '</div>';
+        }
+
         // Track order button.
         $tracking_url = add_query_arg( 'order', $order->get( 'order_number' ), get_permalink( get_option( 'mitzies_jerk_order_tracking_page_id' ) ) );
         echo '<p style="text-align: center;">';

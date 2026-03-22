@@ -60,7 +60,7 @@ class Mitzies_Jerk_Gateway_COD extends Mitzies_Jerk_Payment_Gateway {
         // Send order confirmation email.
         $emails = new Mitzies_Jerk_Emails();
         $emails->send_order_confirmation( $order_id );
-        $emails->send_admin_new_order( $order_id );
+        $emails->send_new_order_admin_email( $order_id );
 
         // Get order received URL.
         $received_url = add_query_arg(
