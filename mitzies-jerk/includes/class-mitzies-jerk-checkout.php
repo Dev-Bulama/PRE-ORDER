@@ -202,12 +202,20 @@ class Mitzies_Jerk_Checkout {
             return $this->errors;
         }
 
-        // Validate delivery date/time.
-        $delivery_datetime = $posted_data['delivery_date'] . ' ' . explode( '-', $posted_data['delivery_time'] )[0];
-        $datetime_validation = mitzies_jerk_validate_delivery_datetime( $delivery_datetime );
+        // Validate delivery date/time (only for non-pickup orders).
+        $is_pickup = $this->is_pickup_order( $posted_data );
 
-        if ( is_wp_error( $datetime_validation ) ) {
-            return $datetime_validation;
+        if ( ! $is_pickup ) {
+            if ( empty( $posted_data['delivery_date'] ) || empty( $posted_data['delivery_time'] ) ) {
+                return new WP_Error( 'missing_delivery_datetime', __( 'Please select a delivery date and time.', 'mitzies-jerk' ) );
+            }
+
+            $delivery_datetime = $posted_data['delivery_date'] . ' ' . explode( '-', $posted_data['delivery_time'] )[0];
+            $datetime_validation = mitzies_jerk_validate_delivery_datetime( $delivery_datetime );
+
+            if ( is_wp_error( $datetime_validation ) ) {
+                return $datetime_validation;
+            }
         }
 
         // Check payment gateway.
@@ -261,7 +269,14 @@ class Mitzies_Jerk_Checkout {
      * @param    array $posted_data Posted data.
      */
     private function validate_posted_data( $posted_data ) {
+        $is_pickup = $this->is_pickup_order( $posted_data );
+
         foreach ( $this->fields as $group => $fields ) {
+            // Skip delivery field validation for pickup orders.
+            if ( 'delivery' === $group && $is_pickup ) {
+                continue;
+            }
+
             foreach ( $fields as $key => $field ) {
                 $field_key = $group . '_' . $key;
                 $value = isset( $posted_data[ $key ] ) ? $posted_data[ $key ] : '';
@@ -334,8 +349,11 @@ class Mitzies_Jerk_Checkout {
         $user_id = is_user_logged_in() ? get_current_user_id() : 0;
 
         // Calculate delivery datetime.
-        $delivery_time_parts = explode( '-', $posted_data['delivery_time'] );
-        $delivery_datetime = $posted_data['delivery_date'] . ' ' . $delivery_time_parts[0] . ':00';
+        $delivery_datetime = '';
+        if ( ! empty( $posted_data['delivery_date'] ) && ! empty( $posted_data['delivery_time'] ) ) {
+            $delivery_time_parts = explode( '-', $posted_data['delivery_time'] );
+            $delivery_datetime = $posted_data['delivery_date'] . ' ' . $delivery_time_parts[0] . ':00';
+        }
 
         // Get cart totals.
         $totals = $cart->get_totals();
@@ -386,6 +404,37 @@ class Mitzies_Jerk_Checkout {
          * @param array $posted_data Posted checkout data.
          */
         return apply_filters( 'mj_checkout_order_data', $order_data, $posted_data );
+    }
+
+    /**
+     * Check if the order is a pickup order based on posted data.
+     *
+     * @since    1.0.0
+     * @param    array $posted_data Posted data.
+     * @return   bool
+     */
+    private function is_pickup_order( $posted_data ) {
+        if ( empty( $posted_data['delivery_method'] ) ) {
+            return false;
+        }
+
+        global $wpdb;
+        $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
+        $table  = $prefix . 'delivery_methods';
+
+        // Check if the table exists.
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+            return false;
+        }
+
+        $method_type = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT method_type FROM {$table} WHERE id = %d",
+                absint( $posted_data['delivery_method'] )
+            )
+        );
+
+        return 'pickup' === $method_type;
     }
 
     /**

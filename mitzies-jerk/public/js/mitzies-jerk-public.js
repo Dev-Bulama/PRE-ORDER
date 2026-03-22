@@ -793,7 +793,13 @@
 
             $requiredFields.each(function() {
                 var $field = $(this);
-                var value = $field.val().trim();
+
+                // Skip validation for fields inside hidden sections.
+                if ($field.closest('.mj-delivery-address-section').length && $field.closest('.mj-delivery-address-section').is(':hidden')) {
+                    return;
+                }
+
+                var value = $field.val() ? $field.val().trim() : '';
 
                 if (!value) {
                     isValid = false;
@@ -1492,13 +1498,21 @@
                 var methodType = $selected.data('method-type');
                 var fee = parseFloat($selected.data('fee')) || 0;
 
-                // Show/hide pickup locations.
+                // Show/hide pickup locations and toggle required on delivery fields.
                 if (methodType === 'pickup') {
                     $('.mj-pickup-locations-section').show();
                     $('.mj-delivery-address-section').hide();
+                    // Remove required from hidden delivery fields to prevent browser validation errors.
+                    $('.mj-delivery-address-section').find('[required]').each(function() {
+                        $(this).removeAttr('required').attr('data-was-required', '1');
+                    });
                 } else {
                     $('.mj-pickup-locations-section').hide();
                     $('.mj-delivery-address-section').show();
+                    // Restore required on delivery fields.
+                    $('.mj-delivery-address-section').find('[data-was-required]').each(function() {
+                        $(this).attr('required', 'required').removeAttr('data-was-required');
+                    });
                 }
 
                 // Update totals.
@@ -1606,9 +1620,17 @@
                 $(this).closest('.mj-delivery-method-option').addClass('selected');
             });
 
-            // Set initial fee from first method.
+            // Set initial fee from first method and handle initial show/hide.
             if (methods.length > 0) {
                 this.updateDeliveryFee(methods[0].fee);
+                // If the first (auto-selected) method is pickup, hide delivery fields.
+                if (methods[0].type === 'pickup') {
+                    $('.mj-pickup-locations-section').show();
+                    $('.mj-delivery-address-section').hide();
+                    $('.mj-delivery-address-section').find('[required]').each(function() {
+                        $(this).removeAttr('required').attr('data-was-required', '1');
+                    });
+                }
             }
         },
 
