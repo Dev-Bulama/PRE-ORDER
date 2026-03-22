@@ -60,7 +60,7 @@ class Mitzies_Jerk_Gateway_Bank_Transfer extends Mitzies_Jerk_Payment_Gateway {
         // Send order confirmation email with bank details.
         $emails = new Mitzies_Jerk_Emails();
         $emails->send_order_confirmation( $order_id );
-        $emails->send_admin_new_order( $order_id );
+        $emails->send_new_order_admin_email( $order_id );
 
         // Get order received URL.
         $received_url = add_query_arg(
@@ -142,6 +142,12 @@ class Mitzies_Jerk_Gateway_Bank_Transfer extends Mitzies_Jerk_Payment_Gateway {
                 'type'        => 'textarea',
                 'description' => __( 'Instructions that will be shown to the customer after checkout.', 'mitzies-jerk' ),
                 'default'     => __( 'Please make your payment directly into our bank account. Use your Order Number as the payment reference. Your order will be processed once the funds have cleared.', 'mitzies-jerk' ),
+            ),
+            'payment_proof_message' => array(
+                'title'       => __( 'Payment Proof Message', 'mitzies-jerk' ),
+                'type'        => 'textarea',
+                'description' => __( 'Message shown on the order confirmation page asking customers to upload/send payment proof.', 'mitzies-jerk' ),
+                'default'     => __( 'After making your bank transfer, please send a screenshot or photo of your payment receipt/proof to our email or WhatsApp. Include your Order Number as reference. Your order will be confirmed once we verify your payment.', 'mitzies-jerk' ),
             ),
         );
     }

@@ -766,6 +766,68 @@ class Mitzies_Jerk_Shortcodes {
                     </div>
                 </div>
 
+                <?php
+                // Show bank transfer payment instructions if applicable.
+                if ( 'bank_transfer' === $order->get( 'payment_method' ) ) :
+                    $bt_gateway = new Mitzies_Jerk_Gateway_Bank_Transfer();
+                    $bank_details = $bt_gateway->get_bank_details();
+                    $instructions = $bt_gateway->get_instructions();
+                    $proof_message = $bt_gateway->get_option( 'payment_proof_message', __( 'After making your bank transfer, please send a screenshot or photo of your payment receipt/proof to our email or WhatsApp. Include your Order Number as reference. Your order will be confirmed once we verify your payment.', 'mitzies-jerk' ) );
+                ?>
+                    <div class="mj-bank-transfer-notice" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #856404;">
+                            <span class="dashicons dashicons-bank" style="margin-right: 8px;"></span>
+                            <?php esc_html_e( 'Bank Transfer Payment Required', 'mitzies-jerk' ); ?>
+                        </h3>
+                        <?php if ( $instructions ) : ?>
+                            <p style="color: #856404;"><?php echo esc_html( $instructions ); ?></p>
+                        <?php endif; ?>
+
+                        <?php
+                        $has_bank_info = ! empty( $bank_details['bank_name'] ) || ! empty( $bank_details['account_name'] ) || ! empty( $bank_details['account_number'] );
+                        if ( $has_bank_info ) :
+                        ?>
+                            <div style="background: #fff; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                                <h4 style="margin-top: 0;"><?php esc_html_e( 'Bank Account Details', 'mitzies-jerk' ); ?></h4>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <?php if ( ! empty( $bank_details['bank_name'] ) ) : ?>
+                                        <tr><td style="padding: 5px 10px 5px 0; font-weight: 600;"><?php esc_html_e( 'Bank Name', 'mitzies-jerk' ); ?></td><td style="padding: 5px 0;"><?php echo esc_html( $bank_details['bank_name'] ); ?></td></tr>
+                                    <?php endif; ?>
+                                    <?php if ( ! empty( $bank_details['account_name'] ) ) : ?>
+                                        <tr><td style="padding: 5px 10px 5px 0; font-weight: 600;"><?php esc_html_e( 'Account Name', 'mitzies-jerk' ); ?></td><td style="padding: 5px 0;"><?php echo esc_html( $bank_details['account_name'] ); ?></td></tr>
+                                    <?php endif; ?>
+                                    <?php if ( ! empty( $bank_details['account_number'] ) ) : ?>
+                                        <tr><td style="padding: 5px 10px 5px 0; font-weight: 600;"><?php esc_html_e( 'Account Number', 'mitzies-jerk' ); ?></td><td style="padding: 5px 0;"><?php echo esc_html( $bank_details['account_number'] ); ?></td></tr>
+                                    <?php endif; ?>
+                                    <?php if ( ! empty( $bank_details['sort_code'] ) ) : ?>
+                                        <tr><td style="padding: 5px 10px 5px 0; font-weight: 600;"><?php esc_html_e( 'Sort Code / Routing', 'mitzies-jerk' ); ?></td><td style="padding: 5px 0;"><?php echo esc_html( $bank_details['sort_code'] ); ?></td></tr>
+                                    <?php endif; ?>
+                                    <?php if ( ! empty( $bank_details['iban'] ) ) : ?>
+                                        <tr><td style="padding: 5px 10px 5px 0; font-weight: 600;"><?php esc_html_e( 'IBAN', 'mitzies-jerk' ); ?></td><td style="padding: 5px 0;"><?php echo esc_html( $bank_details['iban'] ); ?></td></tr>
+                                    <?php endif; ?>
+                                    <?php if ( ! empty( $bank_details['swift_code'] ) ) : ?>
+                                        <tr><td style="padding: 5px 10px 5px 0; font-weight: 600;"><?php esc_html_e( 'SWIFT/BIC', 'mitzies-jerk' ); ?></td><td style="padding: 5px 0;"><?php echo esc_html( $bank_details['swift_code'] ); ?></td></tr>
+                                    <?php endif; ?>
+                                </table>
+                                <p style="margin-bottom: 0; font-size: 13px; color: #666;">
+                                    <strong><?php esc_html_e( 'Payment Reference:', 'mitzies-jerk' ); ?></strong>
+                                    <?php echo esc_html( $order->get( 'order_number' ) ); ?>
+                                </p>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ( $proof_message ) : ?>
+                            <div style="background: #ffeeba; border-radius: 6px; padding: 15px; margin-top: 15px;">
+                                <p style="margin: 0; color: #856404; font-weight: 600;">
+                                    <span class="dashicons dashicons-upload" style="margin-right: 5px;"></span>
+                                    <?php esc_html_e( 'Upload Payment Proof', 'mitzies-jerk' ); ?>
+                                </p>
+                                <p style="margin: 8px 0 0; color: #856404;"><?php echo esc_html( $proof_message ); ?></p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
                 <p class="mj-order-note">
                     <?php esc_html_e( 'A confirmation email has been sent to your email address.', 'mitzies-jerk' ); ?>
                 </p>
