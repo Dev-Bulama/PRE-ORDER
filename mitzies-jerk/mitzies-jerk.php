@@ -12,8 +12,6 @@
  * Domain Path: /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
- * WC requires at least: 5.0
- * WC tested up to: 8.0
  *
  * @package Mitzies_Jerk
  * @author SkillScore IT Solutions and Training, Tijani Bulama
@@ -28,7 +26,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Current plugin version.
  */
-define( 'MITZIES_JERK_VERSION', '1.0.0' );
+define( 'MITZIES_JERK_VERSION', '1.1.0' );
 
 /**
  * Plugin base file.
@@ -137,10 +135,27 @@ function mitzies_jerk_run() {
     // Load helper functions.
     require_once MITZIES_JERK_PATH . 'includes/functions.php';
 
+    // Auto-migrate database tables if needed.
+    mitzies_jerk_maybe_update_db();
+
     require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk.php';
 
     $plugin = new Mitzies_Jerk();
     $plugin->run();
+}
+
+/**
+ * Check and run database migrations if the DB version is outdated.
+ *
+ * @since 1.1.0
+ */
+function mitzies_jerk_maybe_update_db() {
+    $current_db_version = get_option( 'mitzies_jerk_db_version', '1.0.0' );
+
+    if ( version_compare( $current_db_version, '1.1.0', '<' ) ) {
+        require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-activator.php';
+        Mitzies_Jerk_Activator::activate();
+    }
 }
 
 // Initialize the plugin.

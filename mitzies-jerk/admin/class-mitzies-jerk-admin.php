@@ -522,6 +522,14 @@ class Mitzies_Jerk_Admin {
         global $wpdb;
         $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
 
+        // Ensure tables exist before attempting to save.
+        $table_check = $wpdb->get_var( "SHOW TABLES LIKE '{$prefix}delivery_methods'" );
+        if ( ! $table_check ) {
+            // Tables don't exist yet - run migration.
+            require_once MITZIES_JERK_PATH . 'includes/class-mitzies-jerk-activator.php';
+            Mitzies_Jerk_Activator::activate();
+        }
+
         // Save delivery methods.
         if ( isset( $_POST['mj_delivery_methods'] ) && is_array( $_POST['mj_delivery_methods'] ) ) {
             // Get existing IDs.

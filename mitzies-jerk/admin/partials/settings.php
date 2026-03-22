@@ -335,22 +335,34 @@ $currencies = array(
             global $wpdb;
             $prefix = $wpdb->prefix . MITZIES_JERK_TABLE_PREFIX;
 
-            // Fetch existing delivery methods.
-            $delivery_methods = $wpdb->get_results( "SELECT * FROM {$prefix}delivery_methods ORDER BY sort_order ASC" );
-            if ( ! $delivery_methods ) {
-                $delivery_methods = array();
+            $delivery_methods = array();
+            $distance_rates = array();
+            $pickup_locations = array();
+
+            // Safely check if tables exist before querying.
+            $dm_table = $prefix . 'delivery_methods';
+            $dr_table = $prefix . 'distance_rates';
+            $pl_table = $prefix . 'pickup_locations';
+
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $dm_table ) ) === $dm_table ) {
+                $delivery_methods = $wpdb->get_results( "SELECT * FROM {$dm_table} ORDER BY sort_order ASC" );
+                if ( ! $delivery_methods ) {
+                    $delivery_methods = array();
+                }
             }
 
-            // Fetch existing distance rates.
-            $distance_rates = $wpdb->get_results( "SELECT * FROM {$prefix}distance_rates ORDER BY min_distance ASC" );
-            if ( ! $distance_rates ) {
-                $distance_rates = array();
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $dr_table ) ) === $dr_table ) {
+                $distance_rates = $wpdb->get_results( "SELECT * FROM {$dr_table} ORDER BY min_distance ASC" );
+                if ( ! $distance_rates ) {
+                    $distance_rates = array();
+                }
             }
 
-            // Fetch existing pickup locations.
-            $pickup_locations = $wpdb->get_results( "SELECT * FROM {$prefix}pickup_locations ORDER BY sort_order ASC" );
-            if ( ! $pickup_locations ) {
-                $pickup_locations = array();
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $pl_table ) ) === $pl_table ) {
+                $pickup_locations = $wpdb->get_results( "SELECT * FROM {$pl_table} ORDER BY sort_order ASC" );
+                if ( ! $pickup_locations ) {
+                    $pickup_locations = array();
+                }
             }
             ?>
 
